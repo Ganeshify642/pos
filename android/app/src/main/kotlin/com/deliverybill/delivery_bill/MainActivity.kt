@@ -1,0 +1,5 @@
+package com.deliverybill.delivery_bill
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

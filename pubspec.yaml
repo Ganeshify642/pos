@@ -1,0 +1,71 @@
+name: gopal_vadapav_pos
+description: "Gopal Vadapav POS - Offline Fast Billing & Management App."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.1.2
+
+  # Database
+  drift: ^2.20.3
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # PDF Generation & Printing
+  pdf: ^3.10.8
+  printing: ^5.13.1
+
+  # File Management & Sharing
+  share_plus: ^10.0.2
+  file_picker: ^8.1.2
+  open_file: ^3.5.1
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # Date/Time
+  intl: ^0.19.0
+
+  # UI & Fonts
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.3.1
+
+  # Image Picker
+  image_picker: ^1.1.2
+
+  # Preferences
+  shared_preferences: ^2.3.5
+
+  # Charts
+  fl_chart: ^0.68.0
+
+  # Utilities
+  logger: ^2.4.0
+  uuid: ^4.4.0
+  collection: ^1.18.0
+  archive: ^3.6.1
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  drift_dev: ^2.20.3
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
