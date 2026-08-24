@@ -134,6 +134,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           const SizedBox(height: 12),
 
           // Order Type selector
+          // Order Type
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -144,6 +145,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     children: [
                       AppConstants.sourceCounter,
                       AppConstants.sourceDineIn,
@@ -152,17 +154,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       AppConstants.sourceStaff,
                     ].map((source) {
                       final isSelected = op.selectedSource == source;
-                      return ChoiceChip(
-                        label: Text(source),
-                        selected: isSelected,
-                        onSelected: (_) =>
+                      return _OptionChip(
+                        label: source,
+                        isSelected: isSelected,
+                        onTap: () =>
                             context.read<OrderProvider>().setOrderSource(source),
-                        selectedColor:
-                            AppColors.primary.withValues(alpha: 0.15),
-                        labelStyle: TextStyle(
-                          color: isSelected ? AppColors.primary : null,
-                          fontWeight: isSelected ? FontWeight.w600 : null,
-                        ),
+                        icon: _getSourceIcon(source),
                       );
                     }).toList(),
                   ),
@@ -172,7 +169,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
 
           const SizedBox(height: 12),
-
 
           Card(
             child: Padding(
@@ -263,23 +259,69 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Text('Payment Method', style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: AppConstants.paymentMethods.map((method) {
-                      final isSelected = op.paymentMethod == method;
-                      return ChoiceChip(
-                        label: Text(method),
-                        selected: isSelected,
-                        onSelected: (_) => context
-                            .read<OrderProvider>()
-                            .setPaymentMethod(method),
-                        selectedColor: AppColors.primary.withOpacity(0.15),
-                      );
-                    }).toList(),
-                  ),
+                  const SizedBox(height: 16),
+
+                  if (op.selectedSource == AppConstants.sourceStaff)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.badge_outlined,
+                              color: Color(0xFF7C3AED), size: 22),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Staff Meal / Internal Consumption',
+                                  style: TextStyle(
+                                    color: Color(0xFF7C3AED),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Payment method not required. Order logged under Staff.',
+                                  style: TextStyle(
+                                    color: Color(0xFF7C3AED),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    Text('Payment Method', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: AppConstants.paymentMethods.map((method) {
+                        final isSelected = op.paymentMethod == method;
+                        return _OptionChip(
+                          label: method,
+                          isSelected: isSelected,
+                          onTap: () => context
+                              .read<OrderProvider>()
+                              .setPaymentMethod(method),
+                          icon: _getPaymentIcon(method),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -373,5 +415,104 @@ class _SummaryRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── CUSTOM ACTIVE CHIP WIDGET ────────────────────────────────────────────────
+
+class _OptionChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  const _OptionChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : theme.cardColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : theme.dividerColor,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              const Icon(Icons.check_circle, size: 16, color: Colors.white),
+              const SizedBox(width: 6),
+            ] else if (icon != null) ...[
+              Icon(icon, size: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+IconData _getSourceIcon(String source) {
+  switch (source) {
+    case AppConstants.sourceCounter:
+      return Icons.storefront_outlined;
+    case AppConstants.sourceDineIn:
+      return Icons.restaurant_outlined;
+    case AppConstants.sourceTakeaway:
+      return Icons.takeout_dining_outlined;
+    case AppConstants.sourceDelivery:
+      return Icons.delivery_dining_outlined;
+    case AppConstants.sourceStaff:
+      return Icons.badge_outlined;
+    default:
+      return Icons.receipt_long_outlined;
+  }
+}
+
+IconData _getPaymentIcon(String method) {
+  switch (method) {
+    case AppConstants.paymentCash:
+      return Icons.payments_outlined;
+    case AppConstants.paymentUPI:
+      return Icons.qr_code_scanner_outlined;
+    case AppConstants.paymentCard:
+      return Icons.credit_card_outlined;
+    case AppConstants.paymentOnline:
+      return Icons.language_outlined;
+    default:
+      return Icons.payment_outlined;
   }
 }

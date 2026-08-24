@@ -46,7 +46,6 @@ class AppConstants {
     paymentUPI,
     paymentCard,
     paymentOnline,
-    paymentStaff,
   ];
 
   // Payment Status

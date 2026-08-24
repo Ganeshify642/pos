@@ -155,6 +155,11 @@ class OrderProvider extends ChangeNotifier {
     if (source != AppConstants.sourceDelivery) {
       _deliveryFee = 0;
     }
+    if (source == AppConstants.sourceStaff) {
+      _paymentMethod = AppConstants.paymentStaff;
+    } else if (_paymentMethod == AppConstants.paymentStaff) {
+      _paymentMethod = AppConstants.paymentCash;
+    }
     notifyListeners();
   }
 
