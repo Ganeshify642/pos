@@ -256,6 +256,24 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           onRemove: () {
                             orderProvider.removeItemFromCart(item.id);
                           },
+                          onSetQuantity: () {
+                            _showQuantityDialog(
+                              context,
+                              itemName: item.name,
+                              initialQty: qty,
+                              onConfirm: (newQty) {
+                                orderProvider.setItemQuantity(
+                                  item.id,
+                                  newQty,
+                                  itemTemplate: CartItem(
+                                    itemId: item.id,
+                                    itemName: item.name,
+                                    price: item.sellingPrice,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         );
                       },
                     ),
@@ -323,7 +341,36 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                   icon: const Icon(Icons.remove_circle_outline, size: 20),
                                   onPressed: () => op.removeItemFromCart(item.itemId),
                                 ),
-                                Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                InkWell(
+                                  onTap: () {
+                                    _showQuantityDialog(
+                                      context,
+                                      itemName: item.itemName,
+                                      initialQty: item.quantity,
+                                      onConfirm: (newQty) {
+                                        op.setItemQuantity(
+                                          item.itemId,
+                                          newQty,
+                                          itemTemplate: item,
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '${item.quantity}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        const Icon(Icons.edit, size: 12, color: AppColors.primary),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 IconButton(
                                   icon: const Icon(Icons.add_circle_outline, size: 20),
                                   onPressed: () => op.addItemToCart(item),
@@ -467,6 +514,70 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 }
 
+// ── Quantity Dialog ─────────────────────────────────────────────────────────
+
+Future<void> _showQuantityDialog(
+  BuildContext context, {
+  required String itemName,
+  required int initialQty,
+  required ValueChanged<int> onConfirm,
+}) async {
+  final controller = TextEditingController(text: initialQty > 0 ? '$initialQty' : '1');
+  final result = await showDialog<int>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Set Item Quantity'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            itemName,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Quantity',
+              hintText: 'Enter quantity e.g. 10',
+              prefixIcon: Icon(Icons.numbers),
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (val) {
+              final parsed = int.tryParse(val.trim());
+              if (parsed != null && parsed >= 0) {
+                Navigator.of(ctx).pop(parsed);
+              }
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final parsed = int.tryParse(controller.text.trim());
+            if (parsed != null && parsed >= 0) {
+              Navigator.of(ctx).pop(parsed);
+            }
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          child: const Text('Set Quantity', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+  if (result != null) {
+    onConfirm(result);
+  }
+}
+
 // ── Touch-Friendly Item Card ─────────────────────────────────────────
 
 class _ItemCard extends StatelessWidget {
@@ -474,12 +585,14 @@ class _ItemCard extends StatelessWidget {
   final int quantity;
   final VoidCallback onAdd;
   final VoidCallback onRemove;
+  final VoidCallback onSetQuantity;
 
   const _ItemCard({
     required this.item,
     required this.quantity,
     required this.onAdd,
     required this.onRemove,
+    required this.onSetQuantity,
   });
 
   @override
@@ -557,22 +670,49 @@ class _ItemCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.remove, color: Colors.white, size: 18),
+                      icon: const Icon(Icons.remove, color: Colors.white, size: 16),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 32),
                       onPressed: onRemove,
                     ),
-                    Text(
-                      '$quantity',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    Expanded(
+                      child: InkWell(
+                        onTap: onSetQuantity,
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$quantity',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.edit, color: Colors.white, size: 10),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                      icon: const Icon(Icons.add, color: Colors.white, size: 16),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 32),
                       onPressed: onAdd,
                     ),
                   ],

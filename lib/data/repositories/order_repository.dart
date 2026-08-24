@@ -12,10 +12,17 @@ class OrderRepository {
 
   // ─── ORDER CRUD ────────────────────────────────────────────────────────
 
-  /// Get next order sequence number
+  /// Get next order sequence number for today (starts from 1 each day)
   Future<int> getNextOrderSequence() async {
-    final count = await _db.ordersTable.count().getSingle();
-    return count + 1;
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final todaysOrders = await (_db.select(_db.ordersTable)
+          ..where((t) => t.createdAt.isBetweenValues(startOfDay, endOfDay)))
+        .get();
+
+    return todaysOrders.length + 1;
   }
 
   /// Create a new order and its items, returns order ID

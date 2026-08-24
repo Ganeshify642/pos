@@ -159,17 +159,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         style: theme.textTheme.bodySmall
                             ?.copyWith(fontWeight: FontWeight.w700))),
                 SizedBox(
-                    width: 40,
+                    width: 45,
                     child: Text('Made',
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center)),
                 SizedBox(
-                    width: 40,
+                    width: 45,
                     child: Text('Sold',
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center)),
                 SizedBox(
-                    width: 60,
+                    width: 85,
                     child: Text('Status',
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center)),
@@ -296,7 +296,7 @@ class _InventoryRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: 40,
+              width: 45,
               child: Text(
                 '${status.madeQty}',
                 textAlign: TextAlign.center,
@@ -304,7 +304,7 @@ class _InventoryRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: 40,
+              width: 45,
               child: Text(
                 '${status.soldQty}',
                 textAlign: TextAlign.center,
@@ -315,8 +315,12 @@ class _InventoryRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: 60,
-              child: StockStatusChip(status: status),
+              width: 85,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: StockStatusChip(status: status),
+              ),
             ),
           ],
         ),

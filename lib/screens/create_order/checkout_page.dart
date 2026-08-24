@@ -133,43 +133,43 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
           const SizedBox(height: 12),
 
-          // Order Type selector (only when modes enabled in Settings)
-          if (sp.orderModesEnabled)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Order Type', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        AppConstants.sourceCounter,
-                        AppConstants.sourceDineIn,
-                        AppConstants.sourceTakeaway,
-                        AppConstants.sourceDelivery,
-                      ].map((source) {
-                        final isSelected = op.selectedSource == source;
-                        return ChoiceChip(
-                          label: Text(source),
-                          selected: isSelected,
-                          onSelected: (_) =>
-                              context.read<OrderProvider>().setOrderSource(source),
-                          selectedColor:
-                              AppColors.primary.withValues(alpha: 0.15),
-                          labelStyle: TextStyle(
-                            color: isSelected ? AppColors.primary : null,
-                            fontWeight: isSelected ? FontWeight.w600 : null,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
+          // Order Type selector
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Order Type', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      AppConstants.sourceCounter,
+                      AppConstants.sourceDineIn,
+                      AppConstants.sourceTakeaway,
+                      AppConstants.sourceDelivery,
+                      AppConstants.sourceStaff,
+                    ].map((source) {
+                      final isSelected = op.selectedSource == source;
+                      return ChoiceChip(
+                        label: Text(source),
+                        selected: isSelected,
+                        onSelected: (_) =>
+                            context.read<OrderProvider>().setOrderSource(source),
+                        selectedColor:
+                            AppColors.primary.withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          color: isSelected ? AppColors.primary : null,
+                          fontWeight: isSelected ? FontWeight.w600 : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
             ),
+          ),
 
           const SizedBox(height: 12),
 

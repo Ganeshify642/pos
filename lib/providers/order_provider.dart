@@ -213,6 +213,20 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setItemQuantity(int itemId, int quantity, {required CartItem itemTemplate}) {
+    if (quantity <= 0) {
+      _cartItems.removeWhere((c) => c.itemId == itemId);
+    } else {
+      final existing = _cartItems.indexWhere((c) => c.itemId == itemId);
+      if (existing >= 0) {
+        _cartItems[existing] = _cartItems[existing].copyWith(quantity: quantity);
+      } else {
+        _cartItems.add(itemTemplate.copyWith(quantity: quantity));
+      }
+    }
+    notifyListeners();
+  }
+
   void clearCart() {
     _cartItems.clear();
     notifyListeners();

@@ -8,12 +8,15 @@ class AppConstants {
   static const String sourceTakeaway = 'Takeaway';
   static const String sourceDelivery = 'Delivery';
   static const String sourceDineIn = 'Dine-In';
+  static const String sourceStaff = 'Staff';
   static const String sourceOffline = 'Counter';
 
   static const List<String> orderSources = [
     sourceCounter,
+    sourceDineIn,
     sourceTakeaway,
     sourceDelivery,
+    sourceStaff,
   ];
 
   // Order Statuses
@@ -36,12 +39,14 @@ class AppConstants {
   static const String paymentUPI = 'UPI';
   static const String paymentCard = 'Card';
   static const String paymentOnline = 'Online';
+  static const String paymentStaff = 'Staff';
 
   static const List<String> paymentMethods = [
     paymentCash,
     paymentUPI,
     paymentCard,
     paymentOnline,
+    paymentStaff,
   ];
 
   // Payment Status

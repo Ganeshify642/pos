@@ -103,7 +103,9 @@ class _MenuScreenState extends State<MenuScreen>
                 controller: _tabController,
                 children: [
                   _CategoriesTab(
-                      onAddCategory: () => _showCategoryForm(context)),
+                    onAddCategory: () => _showCategoryForm(context),
+                    onEditItem: (item) => _showItemForm(context, item),
+                  ),
                   _ItemsTab(onAddItem: () => _showItemForm(context)),
                 ],
               ),
@@ -166,7 +168,12 @@ class _MenuScreenState extends State<MenuScreen>
 
 class _CategoriesTab extends StatelessWidget {
   final VoidCallback onAddCategory;
-  const _CategoriesTab({required this.onAddCategory});
+  final Function(Item) onEditItem;
+
+  const _CategoriesTab({
+    required this.onAddCategory,
+    required this.onEditItem,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -182,26 +189,119 @@ class _CategoriesTab extends StatelessWidget {
     }
     return ListView.builder(
       itemCount: menuProvider.categories.length,
-      itemBuilder: (_, i) {
+      itemBuilder: (ctx, i) {
         final cat = menuProvider.categories[i];
-        final itemCount = menuProvider.itemsByCategory(cat.id).length;
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: AppColors.primary.withOpacity(0.15),
-            child: Text(
-              cat.name[0],
-              style: const TextStyle(
-                  color: AppColors.primary, fontWeight: FontWeight.bold),
-            ),
+        final categoryItems = menuProvider.itemsByCategory(cat.id);
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(ctx).dividerColor.withValues(alpha: 0.5)),
           ),
-          title: Text(cat.name),
-          subtitle: Text('$itemCount items'),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            onPressed: () => context.read<MenuProvider>().deleteCategory(cat.id),
+          child: ExpansionTile(
+            key: PageStorageKey('cat_${cat.id}'),
+            shape: const Border(),
+            leading: CircleAvatar(
+              backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+              child: Text(
+                cat.name.isNotEmpty ? cat.name[0].toUpperCase() : '?',
+                style: const TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.bold),
+              ),
+            ),
+            title: Text(
+              cat.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Text('${categoryItems.length} items'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.outOfStock),
+                  onPressed: () => context.read<MenuProvider>().deleteCategory(cat.id),
+                  tooltip: 'Delete Category',
+                ),
+                const Icon(Icons.keyboard_arrow_down, size: 24, color: AppColors.primary),
+              ],
+            ),
+            children: [
+              const Divider(height: 1),
+              if (categoryItems.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  child: Center(
+                    child: Text(
+                      'No items in this category yet',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    ),
+                  ),
+                )
+              else
+                ...categoryItems.map((item) => ListTile(
+                      contentPadding: const EdgeInsets.only(left: 20, right: 12),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: item.imageUrl != null
+                            ? Image.file(
+                                File(item.imageUrl!),
+                                width: 38,
+                                height: 38,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _categoryItemIcon(item),
+                              )
+                            : _categoryItemIcon(item),
+                      ),
+                      title: Text(item.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: Text(AppFormatters.currency(item.sellingPrice),
+                          style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch.adaptive(
+                            value: item.isAvailable,
+                            onChanged: (v) => context
+                                .read<MenuProvider>()
+                                .toggleItemAvailability(item.id, v),
+                            activeColor: AppColors.accent,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            onPressed: () => onEditItem(item),
+                            tooltip: 'Edit Item',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            onPressed: () => context.read<MenuProvider>().deleteItem(item.id),
+                            tooltip: 'Delete Item',
+                          ),
+                        ],
+                      ),
+                    )),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _categoryItemIcon(Item item) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: item.isAvailable
+            ? AppColors.primary.withValues(alpha: 0.12)
+            : AppColors.textMuted.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.fastfood_outlined,
+        color: item.isAvailable ? AppColors.primary : AppColors.textMuted,
+        size: 18,
+      ),
     );
   }
 }
