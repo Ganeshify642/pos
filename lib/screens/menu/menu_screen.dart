@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/database/app_database.dart';
@@ -10,6 +11,7 @@ import '../../providers/menu_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/item_image_widget.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -241,17 +243,12 @@ class _CategoriesTab extends StatelessWidget {
               else
                 ...categoryItems.map((item) => ListTile(
                       contentPadding: const EdgeInsets.only(left: 20, right: 12),
-                      leading: ClipRRect(
+                      leading: ItemImageWidget(
+                        imageUrl: item.imageUrl,
+                        width: 38,
+                        height: 38,
                         borderRadius: BorderRadius.circular(8),
-                        child: item.imageUrl != null
-                            ? Image.file(
-                                File(item.imageUrl!),
-                                width: 38,
-                                height: 38,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _categoryItemIcon(item),
-                              )
-                            : _categoryItemIcon(item),
+                        placeholder: _categoryItemIcon(item),
                       ),
                       title: Text(item.name,
                           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
@@ -365,17 +362,12 @@ class _ItemsTab extends StatelessWidget {
                     ),
                   ],
                 ),
-                leading: ClipRRect(
+                leading: ItemImageWidget(
+                  imageUrl: item.imageUrl,
+                  width: 42,
+                  height: 42,
                   borderRadius: BorderRadius.circular(10),
-                  child: item.imageUrl != null
-                      ? Image.file(
-                          File(item.imageUrl!),
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _itemIconPlaceholder(item),
-                        )
-                      : _itemIconPlaceholder(item),
+                  placeholder: _itemIconPlaceholder(item),
                 ),
               );
             },
@@ -448,7 +440,14 @@ class _ItemFormState extends State<_ItemForm> {
       imageQuality: 85,
     );
     if (xFile != null && mounted) {
-      setState(() => _imagePath = xFile.path);
+      final appDir = await getApplicationDocumentsDirectory();
+      final imagesDir = Directory('${appDir.path}/item_images');
+      if (!await imagesDir.exists()) {
+        await imagesDir.create(recursive: true);
+      }
+      final fileName = 'item_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedImage = await File(xFile.path).copy('${imagesDir.path}/$fileName');
+      setState(() => _imagePath = savedImage.path);
     }
   }
 

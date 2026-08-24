@@ -12,6 +12,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/item_image_widget.dart';
 import '../invoice_preview_screen.dart';
 import '../menu/menu_screen.dart';
 import 'checkout_page.dart';
@@ -615,18 +616,13 @@ class _ItemCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Item Image or Icon
-            item.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      File(item.imageUrl!),
-                      width: double.infinity,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _iconPlaceholder(),
-                    ),
-                  )
-                : _iconPlaceholder(),
+            ItemImageWidget(
+              imageUrl: item.imageUrl,
+              width: double.infinity,
+              height: 72,
+              borderRadius: BorderRadius.circular(10),
+              placeholder: _iconPlaceholder(),
+            ),
 
             // Item Name
             Text(
