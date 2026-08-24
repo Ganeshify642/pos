@@ -390,15 +390,20 @@ class OrderProvider extends ChangeNotifier {
   // ── Revenue Stats (today) ─────────────────────────────────────────
   Future<Map<String, double>> getTodayRevenueSummary() async {
     final orders = await _orderRepo.getTodaysOrders();
-    double total = 0, dineIn = 0, takeaway = 0, delivery = 0;
+    double total = 0, dineIn = 0, takeaway = 0, delivery = 0, staff = 0;
     for (final o in orders) {
-      total += o.finalTotal;
-      if (o.orderSource == AppConstants.sourceDineIn) {
-        dineIn += o.finalTotal;
-      } else if (o.orderSource == AppConstants.sourceTakeaway) {
-        takeaway += o.finalTotal;
-      } else if (o.orderSource == AppConstants.sourceDelivery) {
-        delivery += o.finalTotal;
+      final isStaff = o.orderSource == AppConstants.sourceStaff ||
+          o.paymentMethod == AppConstants.paymentStaff;
+
+      if (!isStaff) {
+        total += o.finalTotal;
+        if (o.orderSource == AppConstants.sourceDineIn) {
+          dineIn += o.finalTotal;
+        } else if (o.orderSource == AppConstants.sourceTakeaway) {
+          takeaway += o.finalTotal;
+        } else if (o.orderSource == AppConstants.sourceDelivery) {
+          delivery += o.finalTotal;
+        }
       }
     }
     return {
@@ -407,6 +412,7 @@ class OrderProvider extends ChangeNotifier {
       'dineIn': dineIn,
       'takeaway': takeaway,
       'delivery': delivery,
+      'staff': staff,
       'orderCount': orders.length.toDouble(),
     };
   }

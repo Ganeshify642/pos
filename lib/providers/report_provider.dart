@@ -151,15 +151,19 @@ class ReportProvider extends ChangeNotifier {
       double totalRevenue = 0;
 
       for (final o in orders) {
-        totalRevenue += o.finalTotal;
+        final isStaff = o.orderSource == AppConstants.sourceStaff ||
+            o.paymentMethod == AppConstants.paymentStaff;
+
+        final revenueContrib = isStaff ? 0.0 : o.finalTotal;
+        totalRevenue += revenueContrib;
 
         final existing = bySource[o.orderSource];
         bySource[o.orderSource] = SourceStats(
           source: o.orderSource,
           orderCount: (existing?.orderCount ?? 0) + 1,
-          grossRevenue: (existing?.grossRevenue ?? 0) + o.finalTotal,
+          grossRevenue: (existing?.grossRevenue ?? 0) + revenueContrib,
           platformFees: 0,
-          netRevenue: (existing?.netRevenue ?? 0) + o.finalTotal,
+          netRevenue: (existing?.netRevenue ?? 0) + revenueContrib,
         );
       }
 

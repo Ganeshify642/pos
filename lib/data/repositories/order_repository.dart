@@ -3,6 +3,7 @@ import '../database/app_database.dart';
 import '../db_types.dart';
 import '../../utils/formatters.dart';
 import '../../models/app_models.dart';
+import '../../utils/constants.dart';
 
 
 class OrderRepository {
@@ -208,6 +209,8 @@ class OrderRepository {
 
     final List<ItemAnalytics> result = [];
 
+    final orderMap = {for (final o in orders) o.id: o};
+
     for (final entry in grouped.entries) {
       final itemId = entry.key;
       final oiList = entry.value;
@@ -224,8 +227,15 @@ class OrderRepository {
       final Set<int> orderSet = {};
 
       for (final oi in oiList) {
+        final orderObj = orderMap[oi.orderId];
+        final isStaff = orderObj != null &&
+            (orderObj.orderSource == AppConstants.sourceStaff ||
+                orderObj.paymentMethod == AppConstants.paymentStaff);
+
         totalQtySold += oi.quantity;
-        totalRevenue += oi.quantity * oi.priceAtOrder;
+        if (!isStaff) {
+          totalRevenue += oi.quantity * oi.priceAtOrder;
+        }
         orderSet.add(oi.orderId);
       }
 
