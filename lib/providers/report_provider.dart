@@ -105,6 +105,40 @@ class ReportProvider extends ChangeNotifier {
     return list;
   }
 
+  List<CategoryAnalytics> get categoryAnalytics {
+    final Map<String, List<ItemAnalytics>> grouped = {};
+    for (final item in _itemAnalytics) {
+      grouped.putIfAbsent(item.categoryName, () => []).add(item);
+    }
+
+    final List<CategoryAnalytics> list = [];
+    for (final entry in grouped.entries) {
+      final catName = entry.key;
+      final items = entry.value;
+
+      final totalQtySold = items.fold(0, (sum, i) => sum + i.totalQtySold);
+      final totalRevenue = items.fold(0.0, (sum, i) => sum + i.totalRevenue);
+      final totalCost = items.fold(0.0, (sum, i) => sum + i.totalCost);
+      final totalProfit = items.fold(0.0, (sum, i) => sum + i.totalProfit);
+
+      final itemList = List<ItemAnalytics>.from(items)
+        ..sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
+
+      list.add(CategoryAnalytics(
+        categoryName: catName,
+        totalQtySold: totalQtySold,
+        totalRevenue: totalRevenue,
+        totalCost: totalCost,
+        totalProfit: totalProfit,
+        itemCount: items.length,
+        items: itemList,
+      ));
+    }
+
+    list.sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
+    return list;
+  }
+
   Future<void> loadReport() async {
     _isLoading = true;
     notifyListeners();

@@ -26,7 +26,7 @@ class _ReportsScreenState extends State<ReportsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReportProvider>().loadReport();
     });
@@ -103,6 +103,7 @@ class _ReportsScreenState extends State<ReportsScreen>
           tabs: const [
             Tab(text: 'Revenue'),
             Tab(text: 'Orders'),
+            Tab(text: 'By Category'),
             Tab(text: 'Item Insights'),
           ],
         ),
@@ -166,6 +167,7 @@ class _ReportsScreenState extends State<ReportsScreen>
                         children: [
                           _RevenueTab(report: report.report!),
                           _OrdersTab(report: report.report!),
+                          const _CategoryReportTab(),
                           const _ItemAnalyticsTab(),
                         ],
                       ),
@@ -860,5 +862,325 @@ class _ItemStat extends StatelessWidget {
             )),
       ],
     );
+  }
+}
+
+// ── CATEGORY REPORT TAB ──────────────────────────────────────────────────────
+
+class _CategoryReportTab extends StatelessWidget {
+  const _CategoryReportTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final provider = context.watch<ReportProvider>();
+    final categories = provider.categoryAnalytics;
+
+    final totalCategoriesCount = categories.length;
+    final totalCategoryUnits = categories.fold(0, (sum, c) => sum + c.totalQtySold);
+    final totalCategoryRevenue = categories.fold(0.0, (sum, c) => sum + c.totalRevenue);
+    final totalCategoryProfit = categories.fold(0.0, (sum, c) => sum + c.totalProfit);
+
+    final topCategory = categories.isNotEmpty ? categories.first : null;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Summary KPI Banner
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.category_outlined, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Category Performance Overview',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.primary, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _KpiBox(
+                      label: 'Active Categories',
+                      value: '$totalCategoriesCount',
+                    ),
+                  ),
+                  Expanded(
+                    child: _KpiBox(
+                      label: 'Total Units Sold',
+                      value: '$totalCategoryUnits',
+                    ),
+                  ),
+                  Expanded(
+                    child: _KpiBox(
+                      label: 'Total Sales',
+                      value: AppFormatters.currency(totalCategoryRevenue),
+                    ),
+                  ),
+                  Expanded(
+                    child: _KpiBox(
+                      label: 'Net Profit',
+                      value: AppFormatters.currency(totalCategoryProfit),
+                      valueColor: AppColors.inStock,
+                    ),
+                  ),
+                ],
+              ),
+              if (topCategory != null) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.star_rounded, color: AppColors.accent, size: 16),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Top Category: ${topCategory.categoryName} (${AppFormatters.currency(topCategory.totalRevenue)} • ${topCategory.totalQtySold} sold)',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Pie Chart of Category Revenue Distribution
+        if (totalCategoryRevenue > 0 && categories.isNotEmpty) ...[
+          Text('Category Sales Share', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 200,
+            child: PieChart(
+              PieChartData(
+                sections: categories.asMap().entries.map((e) {
+                  final idx = e.key;
+                  final cat = e.value;
+                  final pct = totalCategoryRevenue > 0
+                      ? (cat.totalRevenue / totalCategoryRevenue * 100)
+                      : 0.0;
+                  return PieChartSectionData(
+                    value: cat.totalRevenue,
+                    title: '${pct.toStringAsFixed(0)}%',
+                    color: _catColor(idx),
+                    radius: 58,
+                    titleStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }).toList(),
+                sectionsSpace: 2,
+                centerSpaceRadius: 38,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: categories.asMap().entries.map((e) {
+              final idx = e.key;
+              final cat = e.value;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _catColor(idx),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text('${cat.categoryName} (${AppFormatters.currency(cat.totalRevenue)})',
+                      style: const TextStyle(fontSize: 12)),
+                ],
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        Text('Category Wise Breakdown', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 10),
+
+        if (categories.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: Text('No category sales data for this period'),
+            ),
+          )
+        else
+          ...categories.asMap().entries.map((e) {
+            final idx = e.key;
+            final cat = e.value;
+            final sharePct = totalCategoryRevenue > 0
+                ? (cat.totalRevenue / totalCategoryRevenue)
+                : 0.0;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                    color: theme.dividerColor.withValues(alpha: 0.5)),
+              ),
+              child: ExpansionTile(
+                key: PageStorageKey('cat_report_${cat.categoryName}'),
+                shape: const Border(),
+                leading: CircleAvatar(
+                  backgroundColor: _catColor(idx).withValues(alpha: 0.15),
+                  child: Text(
+                    cat.categoryName.isNotEmpty
+                        ? cat.categoryName[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                        color: _catColor(idx), fontWeight: FontWeight.bold),
+                  ),
+                ),
+                title: Row(
+                  children: [
+                    Text(
+                      cat.categoryName,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _marginColor(cat.profitMarginPct)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _marginColor(cat.profitMarginPct)
+                              .withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Text(
+                        '${cat.profitMarginPct.toStringAsFixed(0)}% margin',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _marginColor(cat.profitMarginPct),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      '${cat.totalQtySold} units sold  •  ${AppFormatters.currency(cat.totalRevenue)} revenue',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: sharePct,
+                        backgroundColor: theme.dividerColor.withValues(alpha: 0.3),
+                        valueColor: AlwaysStoppedAnimation(_catColor(idx)),
+                        minHeight: 5,
+                      ),
+                    ),
+                  ],
+                ),
+                children: [
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Items in ${cat.categoryName}:',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 12)),
+                        const SizedBox(height: 6),
+                        ...cat.items.map((item) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.itemName,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.totalQtySold} sold',
+                                    style: const TextStyle(
+                                        fontSize: 12, color: AppColors.textMuted),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Text(
+                                    AppFormatters.currency(item.totalRevenue),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  Color _catColor(int idx) {
+    const palette = [
+      Color(0xFFEA580C),
+      Color(0xFF4F46E5),
+      Color(0xFF059669),
+      Color(0xFF7C3AED),
+      Color(0xFFD97706),
+      Color(0xFF0284C7),
+      Color(0xFFDC2626),
+    ];
+    return palette[idx % palette.length];
+  }
+
+  Color _marginColor(double pct) {
+    if (pct >= 50) return AppColors.inStock;
+    if (pct >= 25) return AppColors.lowStock;
+    return AppColors.primary;
   }
 }

@@ -188,3 +188,28 @@ class ItemAnalytics {
       orderCount > 0 ? totalQtySold / orderCount : 0.0;
 }
 
+// ── CATEGORY ANALYTICS & BREAKDOWN ──────────────────────────────────────
+
+class CategoryAnalytics {
+  final String categoryName;
+  final int totalQtySold;
+  final double totalRevenue;
+  final double totalCost;
+  final double totalProfit;
+  final int itemCount;
+  final List<ItemAnalytics> items;
+
+  CategoryAnalytics({
+    required this.categoryName,
+    required this.totalQtySold,
+    required this.totalRevenue,
+    required this.totalCost,
+    required this.totalProfit,
+    required this.itemCount,
+    required this.items,
+  });
+
+  double get profitMarginPct =>
+      totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0.0;
+}
+
