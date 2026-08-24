@@ -86,23 +86,37 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 100,
-                height: 100,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(28),
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
+                      color: AppColors.primary.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
-                  ],  
+                  ],
                 ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: Colors.white,
-                  size: 52,
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/gopal_logo.png',
+                    width: 140,
+                    height: 140,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.restaurant,
+                        color: Colors.white,
+                        size: 60,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
