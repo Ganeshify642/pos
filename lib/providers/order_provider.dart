@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import '../data/database/app_database.dart';
 import '../data/db_types.dart';
 import '../data/repositories/order_repository.dart';
 import '../data/repositories/inventory_repository.dart';
@@ -8,7 +7,6 @@ import '../models/app_models.dart';
 import '../services/calculation_service.dart';
 import '../services/invoice_service.dart';
 import '../utils/constants.dart';
-import '../utils/formatters.dart';
 
 class OrderProvider extends ChangeNotifier {
   final OrderRepository _orderRepo;
@@ -278,8 +276,7 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final sequence = await _orderRepo.getNextOrderSequence();
-      final orderNumber = CalculationService.generateOrderNumber(sequence);
+      final orderNumber = await _orderRepo.generateUniqueOrderNumber();
 
       final cartLineItems = _cartItems
           .map((c) => (qty: c.quantity, price: c.price))
@@ -392,11 +389,32 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> cancelOrder(int orderId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _orderRepo.cancelOrder(orderId);
+      await loadOrders();
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = 'Failed to cancel order: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // ── Revenue Stats (today) ─────────────────────────────────────────
   Future<Map<String, double>> getTodayRevenueSummary() async {
     final orders = await _orderRepo.getTodaysOrders();
     double total = 0, dineIn = 0, takeaway = 0, delivery = 0, staff = 0;
+    int completedCount = 0;
     for (final o in orders) {
+      if (o.orderStatus == AppConstants.statusCancelled) continue;
+      completedCount++;
+
       final isStaff = o.orderSource == AppConstants.sourceStaff ||
           o.paymentMethod == AppConstants.paymentStaff;
 
@@ -418,7 +436,7 @@ class OrderProvider extends ChangeNotifier {
       'takeaway': takeaway,
       'delivery': delivery,
       'staff': staff,
-      'orderCount': orders.length.toDouble(),
+      'orderCount': completedCount.toDouble(),
     };
   }
 }

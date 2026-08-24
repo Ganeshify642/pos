@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,9 +6,10 @@ import '../../models/app_models.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/printer_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/mock_data_service.dart';
 import '../../utils/app_colors.dart';
-import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/item_image_widget.dart';
@@ -74,6 +74,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() => _isSubmitting = false);
 
     if (summary != null) {
+      // If auto-print is enabled and printer is connected, print receipt in background
+      final printer = context.read<PrinterProvider>();
+      if (printer.autoPrintOnOrder && printer.isConnected) {
+        printer.printOrderReceipt(
+          order: summary.order,
+          items: summary.items,
+          business: settings.businessSettings!,
+          taxSettings: settings.taxSettings!,
+        );
+      }
+
       Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => InvoicePreviewScreen(
           orderId: summary.order.id,
@@ -224,11 +235,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               ? EmptyState(
                   icon: Icons.fastfood_outlined,
                   title: 'No Menu Items Yet',
-                  subtitle: 'Add your delicious items to start taking orders.',
+                  subtitle: 'Add your delicious items or load sample Vadapav shop menu to start testing.',
                   actionLabel: '+ Add Items to Menu',
                   onAction: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const MenuScreen()),
                   ),
+                  secondaryActionLabel: 'Load Vadapav Demo Menu',
+                  onSecondaryAction: () async {
+                    final db = context.read<AppDatabase>();
+                    await MockDataService.loadVadapavMockData(db);
+                    if (context.mounted) {
+                      await context.read<SettingsProvider>().loadSettings();
+                      await context.read<MenuProvider>().loadAll();
+                      await context.read<InventoryProvider>().loadInventoryStatus();
+                      await context.read<OrderProvider>().loadOrders();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Vadapav Shop demo menu & orders loaded!'),
+                          backgroundColor: AppColors.inStock,
+                        ),
+                      );
+                    }
+                  },
                 )
               : items.isEmpty
                   ? const Center(child: Text('No matching items found'))

@@ -73,7 +73,7 @@ class OrdersTable extends Table {
   String get tableName => 'orders';
 
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get orderNumber => text().unique()();
+  TextColumn get orderNumber => text()();
   TextColumn get orderSource => text()(); // Offline/Swiggy/Zomato/Other
   TextColumn get deliveryAppName => text().nullable()();
   TextColumn get deliveryAppOrderId => text().nullable()();

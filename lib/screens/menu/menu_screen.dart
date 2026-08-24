@@ -5,9 +5,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/database/app_database.dart';
 import '../../data/db_types.dart';
+import '../../providers/inventory_provider.dart';
 import '../../providers/menu_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../services/mock_data_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/empty_state.dart';
@@ -184,9 +187,26 @@ class _CategoriesTab extends StatelessWidget {
       return EmptyState(
         icon: Icons.category_outlined,
         title: 'No categories',
-        subtitle: 'Add your first menu category',
+        subtitle: 'Add your first menu category or load sample Vadapav menu',
         actionLabel: 'Add Category',
         onAction: onAddCategory,
+        secondaryActionLabel: 'Load Vadapav Demo Menu',
+        onSecondaryAction: () async {
+          final db = context.read<AppDatabase>();
+          await MockDataService.loadVadapavMockData(db);
+          if (context.mounted) {
+            await context.read<SettingsProvider>().loadSettings();
+            await context.read<MenuProvider>().loadAll();
+            await context.read<InventoryProvider>().loadInventoryStatus();
+            await context.read<OrderProvider>().loadOrders();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Vadapav Shop Demo Menu loaded!'),
+                backgroundColor: AppColors.inStock,
+              ),
+            );
+          }
+        },
       );
     }
     return ListView.builder(
@@ -316,9 +336,26 @@ class _ItemsTab extends StatelessWidget {
       return EmptyState(
         icon: Icons.restaurant_menu_outlined,
         title: 'No items',
-        subtitle: 'Add your menu items',
+        subtitle: 'Add your menu items or load sample Vadapav menu',
         actionLabel: 'Add Item',
         onAction: onAddItem,
+        secondaryActionLabel: 'Load Vadapav Demo Menu',
+        onSecondaryAction: () async {
+          final db = context.read<AppDatabase>();
+          await MockDataService.loadVadapavMockData(db);
+          if (context.mounted) {
+            await context.read<SettingsProvider>().loadSettings();
+            await context.read<MenuProvider>().loadAll();
+            await context.read<InventoryProvider>().loadInventoryStatus();
+            await context.read<OrderProvider>().loadOrders();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Vadapav Shop Demo Menu loaded!'),
+                backgroundColor: AppColors.inStock,
+              ),
+            );
+          }
+        },
       );
     }
     return Column(

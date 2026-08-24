@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../providers/order_provider.dart';
 import '../providers/inventory_provider.dart';
+import '../providers/printer_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_colors.dart';
 import '../utils/formatters.dart';
 import '../widgets/order_card.dart';
+import '../widgets/printer_dialog.dart';
 import '../widgets/stat_card.dart';
 import 'create_order/create_order_screen.dart';
 import 'orders_list_screen.dart';
@@ -156,6 +158,28 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ],
               ),
               actions: [
+                Consumer<PrinterProvider>(
+                  builder: (context, printer, _) {
+                    return IconButton(
+                      icon: Icon(
+                        printer.isConnected
+                            ? Icons.print_rounded
+                            : Icons.print_outlined,
+                        color: printer.isConnected
+                            ? AppColors.inStock
+                            : (!printer.isBluetoothEnabled
+                                ? Colors.red
+                                : null),
+                      ),
+                      onPressed: () => PrinterDialog.show(context),
+                      tooltip: printer.isConnected
+                          ? 'Printer: ${printer.connectedPrinter?.name ?? "Connected"}'
+                          : (!printer.isBluetoothEnabled
+                              ? 'Bluetooth Off - Tap to Connect'
+                              : 'Thermal Printer - Tap to Connect'),
+                    );
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.bar_chart_rounded),
                   onPressed: () => Navigator.of(context).push(MaterialPageRoute(

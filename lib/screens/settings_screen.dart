@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/database/app_database.dart';
+import '../providers/inventory_provider.dart';
+import '../providers/menu_provider.dart';
+import '../providers/order_provider.dart';
+import '../providers/printer_provider.dart';
+import '../providers/report_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/mock_data_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/constants.dart';
+import '../widgets/printer_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -25,6 +33,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _igstController = TextEditingController();
 
   bool _initialized = false;
+  bool _loadingMockData = false;
+
+  Future<void> _handleLoadMockData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.fastfood_rounded, color: AppColors.primary),
+            SizedBox(width: 8),
+            Expanded(child: Text('Load Vadapav Shop Data?')),
+          ],
+        ),
+        content: const Text(
+          'This will populate:\n\n'
+          '• 18+ Vadapav shop menu items (Classic, Cheese, Samosa Pav, Bhajiya, Chai & Combos)\n'
+          '• 5 Categories (Vadapav Specials, Samosa & Puffs, Snacks, Beverages, Combos)\n'
+          '• Daily stock & preparation inventory\n'
+          '• 13+ sample orders with PDF invoices (Counter, Dine-In, Takeaway, Swiggy, Zomato)\n\n'
+          'Existing items and orders will be replaced with fresh mock data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            icon: const Icon(Icons.fastfood, size: 16),
+            label: const Text('Load Demo Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _loadingMockData = true);
+
+    try {
+      final db = context.read<AppDatabase>();
+      await MockDataService.loadVadapavMockData(db);
+
+      if (mounted) {
+        await context.read<SettingsProvider>().loadSettings();
+        await context.read<MenuProvider>().loadAll();
+        await context.read<InventoryProvider>().loadInventoryStatus();
+        await context.read<OrderProvider>().loadOrders();
+        await context.read<ReportProvider>().loadReport();
+
+        // Update controllers
+        final s = context.read<SettingsProvider>();
+        _nameController.text = s.businessSettings?.businessName ?? '';
+        _phoneController.text = s.businessSettings?.phone ?? '';
+        _addressController.text = s.businessSettings?.address ?? '';
+        _gstController.text = s.businessSettings?.gstId ?? '';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vadapav Shop Mock Data loaded successfully!'),
+            backgroundColor: AppColors.inStock,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load mock data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingMockData = false);
+    }
+  }
+
+  Future<void> _handleClearAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear All Data?'),
+        content: const Text(
+          'Are you sure you want to delete all menu items, inventory, and order history? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _loadingMockData = true);
+
+    try {
+      final db = context.read<AppDatabase>();
+      await MockDataService.clearAllData(db);
+
+      if (mounted) {
+        await context.read<MenuProvider>().loadAll();
+        await context.read<InventoryProvider>().loadInventoryStatus();
+        await context.read<OrderProvider>().loadOrders();
+        await context.read<ReportProvider>().loadReport();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All data cleared successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to clear data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingMockData = false);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -282,6 +422,199 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
+          // ── Thermal Printer (Bluetooth) ─────────────────────────────
+          _SectionHeader('Bluetooth Thermal Printer'),
+          Consumer<PrinterProvider>(
+            builder: (context, printer, _) {
+              final isConnected = printer.isConnected;
+              final isBtOn = printer.isBluetoothEnabled;
+
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Status Banner
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: !isBtOn
+                                  ? Colors.red.withValues(alpha: 0.12)
+                                  : isConnected
+                                      ? AppColors.inStock.withValues(alpha: 0.12)
+                                      : Colors.amber.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              !isBtOn
+                                  ? Icons.bluetooth_disabled
+                                  : isConnected
+                                      ? Icons.check_circle_outline
+                                      : Icons.print_disabled_outlined,
+                              color: !isBtOn
+                                  ? Colors.red
+                                  : isConnected
+                                      ? AppColors.inStock
+                                      : Colors.amber.shade800,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  !isBtOn
+                                      ? 'Bluetooth Disabled'
+                                      : isConnected
+                                          ? (printer.connectedPrinter?.name ??
+                                              'Thermal Printer')
+                                          : 'No Printer Connected',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                Text(
+                                  !isBtOn
+                                      ? 'Turn ON Bluetooth to connect printer'
+                                      : isConnected
+                                          ? 'Ready for receipt printing'
+                                          : 'Connect your ESC/POS thermal printer',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => PrinterDialog.show(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isConnected
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : AppColors.primary,
+                              foregroundColor: isConnected
+                                  ? theme.colorScheme.onSurface
+                                  : Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                            ),
+                            child: Text(isConnected ? 'Manage' : 'Connect'),
+                          ),
+                        ],
+                      ),
+
+                      if (isConnected) ...[
+                        const Divider(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: printer.isPrinting
+                                    ? null
+                                    : () async {
+                                        if (settings.businessSettings != null) {
+                                          final ok = await printer
+                                              .printTestReceipt(
+                                            business:
+                                                settings.businessSettings!,
+                                          );
+                                          if (context.mounted && ok) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'Test receipt printed successfully!'),
+                                                backgroundColor:
+                                                    AppColors.inStock,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                icon: printer.isPrinting
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.receipt_long, size: 16),
+                                label: Text(printer.isPrinting
+                                    ? 'Printing...'
+                                    : 'Print Test Receipt'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: () => printer.disconnect(),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                              ),
+                              child: const Text('Disconnect'),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      const Divider(height: 24),
+
+                      // Paper Size Selection
+                      Row(
+                        children: [
+                          Text('Paper Size',
+                              style: theme.textTheme.titleSmall),
+                          const Spacer(),
+                          SegmentedButton<String>(
+                            selected: {printer.paperSize},
+                            onSelectionChanged: (set) =>
+                                printer.setPaperSize(set.first),
+                            segments: const [
+                              ButtonSegment(
+                                value: '58mm',
+                                label: Text('58mm (Small)'),
+                              ),
+                              ButtonSegment(
+                                value: '80mm',
+                                label: Text('80mm'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Auto-print switch
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Auto-print New Orders',
+                            style: TextStyle(fontSize: 14)),
+                        subtitle: const Text(
+                          'Automatically print receipt when order checkout completes',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        value: printer.autoPrintOnOrder,
+                        onChanged: (v) => printer.setAutoPrintOnOrder(v),
+                        activeTrackColor: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
           // ── Appearance ────────────────────────────────────────────
           _SectionHeader('Appearance'),
           Card(
@@ -296,6 +629,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (v) => settings.setThemeMode(
                         v ? ThemeMode.dark : ThemeMode.light),
                     activeColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Testing & Demo Data ─────────────────────────────────────
+          _SectionHeader('Testing & Demo Data'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.fastfood_rounded,
+                            color: AppColors.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Vadapav Shop Mock Data',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              'Populate realistic items, stock & orders for testing',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Loads 18+ menu items (Classic Vadapav, Cheese Burst, Samosa Pav, Bhajiya, Masala Chai & Combos), 5 categories, daily stock inventory, and 13+ sample orders with PDF invoices for quick billing, reporting & thermal printer testing.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              _loadingMockData ? null : _handleLoadMockData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          icon: _loadingMockData
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.download_rounded, size: 18),
+                          label: Text(_loadingMockData
+                              ? 'Loading Data...'
+                              : 'Load Vadapav Mock Data'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      OutlinedButton(
+                        onPressed:
+                            _loadingMockData ? null : _handleClearAllData,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                        ),
+                        child: const Text('Clear All'),
+                      ),
+                    ],
                   ),
                 ],
               ),

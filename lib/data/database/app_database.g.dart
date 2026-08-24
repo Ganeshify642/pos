@@ -1879,9 +1879,7 @@ class $OrdersTableTable extends OrdersTable
   @override
   late final GeneratedColumn<String> orderNumber = GeneratedColumn<String>(
       'order_number', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _orderSourceMeta =
       const VerificationMeta('orderSource');
   @override

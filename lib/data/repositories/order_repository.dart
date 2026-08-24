@@ -1,10 +1,9 @@
 import 'package:drift/drift.dart';
-import '../database/app_database.dart';
-import '../db_types.dart';
-import '../../utils/formatters.dart';
 import '../../models/app_models.dart';
+import '../../services/calculation_service.dart';
 import '../../utils/constants.dart';
-
+import '../../utils/formatters.dart';
+import '../db_types.dart';
 
 class OrderRepository {
   final AppDatabase _db;
@@ -13,9 +12,9 @@ class OrderRepository {
 
   // ─── ORDER CRUD ────────────────────────────────────────────────────────
 
-  /// Get next order sequence number for today (starts from 1 each day)
-  Future<int> getNextOrderSequence() async {
-    final now = DateTime.now();
+  /// Get next order sequence number for a date (resets to 1 after midnight 12:00 AM)
+  Future<int> getNextOrderSequence([DateTime? date]) async {
+    final now = date ?? DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
@@ -23,7 +22,38 @@ class OrderRepository {
           ..where((t) => t.createdAt.isBetweenValues(startOfDay, endOfDay)))
         .get();
 
-    return todaysOrders.length + 1;
+    int maxSeq = 0;
+    for (final o in todaysOrders) {
+      final seq = int.tryParse(o.orderNumber) ??
+          int.tryParse(o.orderNumber.split('-').last) ??
+          0;
+      if (seq > maxSeq) {
+        maxSeq = seq;
+      }
+    }
+
+    return maxSeq + 1;
+  }
+
+  /// Generate guaranteed unique order number (001, 002, 003...)
+  Future<String> generateUniqueOrderNumber([DateTime? date]) async {
+    final now = date ?? DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    int seq = await getNextOrderSequence(now);
+    while (true) {
+      final candidate = CalculationService.generateOrderNumber(seq, now);
+      final exists = await (_db.select(_db.ordersTable)
+            ..where((t) =>
+                t.orderNumber.equals(candidate) &
+                t.createdAt.isBetweenValues(startOfDay, endOfDay)))
+          .getSingleOrNull();
+      if (exists == null) {
+        return candidate;
+      }
+      seq++;
+    }
   }
 
   /// Create a new order and its items, returns order ID
@@ -53,8 +83,8 @@ class OrderRepository {
   Future<List<Order>> getOrdersForDateRange(
       DateTime start, DateTime end) async {
     return await (_db.select(_db.ordersTable)
-          ..where((t) =>
-              t.createdAt.isBetweenValues(start, end.add(const Duration(days: 1))))
+          ..where((t) => t.createdAt
+              .isBetweenValues(start, end.add(const Duration(days: 1))))
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .get();
   }
@@ -72,8 +102,7 @@ class OrderRepository {
 
   /// Get single order by ID
   Future<Order?> getOrderById(int id) async {
-    return await (_db.select(_db.ordersTable)
-          ..where((t) => t.id.equals(id)))
+    return await (_db.select(_db.ordersTable)..where((t) => t.id.equals(id)))
         .getSingleOrNull();
   }
 
@@ -94,42 +123,74 @@ class OrderRepository {
 
   /// Update order status
   Future<void> updateOrderStatus(int orderId, String status) async {
-    await (_db.update(_db.ordersTable)
-          ..where((t) => t.id.equals(orderId)))
+    await (_db.update(_db.ordersTable)..where((t) => t.id.equals(orderId)))
         .write(OrdersTableCompanion(
       orderStatus: Value(status),
-      completedAt: status == 'Completed'
-          ? Value(DateTime.now())
-          : const Value.absent(),
+      completedAt:
+          status == 'Completed' ? Value(DateTime.now()) : const Value.absent(),
     ));
   }
 
   /// Update invoice path after PDF generation
   Future<void> updateInvoicePath(int orderId, String path) async {
-    await (_db.update(_db.ordersTable)
-          ..where((t) => t.id.equals(orderId)))
+    await (_db.update(_db.ordersTable)..where((t) => t.id.equals(orderId)))
         .write(OrdersTableCompanion(invoicePath: Value(path)));
   }
 
-  /// Delete order (for cancellation)
+  /// Cancel order: updates status to Cancelled and restores sold inventory quantities
+  Future<void> cancelOrder(int orderId) async {
+    final order = await getOrderById(orderId);
+    if (order == null || order.orderStatus == AppConstants.statusCancelled) {
+      return;
+    }
+
+    await (_db.update(_db.ordersTable)..where((t) => t.id.equals(orderId)))
+        .write(const OrdersTableCompanion(
+      orderStatus: Value(AppConstants.statusCancelled),
+      paymentStatus: Value(AppConstants.statusCancelled),
+    ));
+
+    // Restore inventory quantities for today
+    final items = await getOrderItems(orderId);
+    final today = AppFormatters.todayKey;
+
+    for (final item in items) {
+      final existingInv = await (_db.select(_db.dailyInventoryTable)
+            ..where((t) => t.itemId.equals(item.itemId) & t.date.equals(today)))
+          .getSingleOrNull();
+
+      if (existingInv != null) {
+        final newSold = (existingInv.soldQty - item.quantity).clamp(0, 999999);
+        await (_db.update(_db.dailyInventoryTable)
+              ..where((t) => t.id.equals(existingInv.id)))
+            .write(DailyInventoryTableCompanion(
+          soldQty: Value(newSold),
+          updatedAt: Value(DateTime.now()),
+        ));
+      }
+    }
+  }
+
+  /// Delete order
   Future<void> deleteOrder(int orderId) async {
     await (_db.delete(_db.orderItemsTable)
           ..where((t) => t.orderId.equals(orderId)))
         .go();
-    await (_db.delete(_db.ordersTable)
-          ..where((t) => t.id.equals(orderId)))
+    await (_db.delete(_db.ordersTable)..where((t) => t.id.equals(orderId)))
         .go();
   }
 
   // ─── REPORTING QUERIES ────────────────────────────────────────────────
 
-  /// Revenue summary by source for a date range
+  /// Revenue summary by source for a date range (excludes cancelled orders)
   Future<Map<String, SourceStats>> getRevenueBySource(
       DateTime start, DateTime end) async {
     final orders = await getOrdersForDateRange(start, end);
     final Map<String, SourceStats> result = {};
 
     for (final order in orders) {
+      if (order.orderStatus == AppConstants.statusCancelled) continue;
+
       final source = order.orderSource;
       final existing = result[source];
       result[source] = SourceStats(
@@ -143,10 +204,13 @@ class OrderRepository {
     return result;
   }
 
-  /// Top selling items by quantity for a date range
-  Future<List<MapEntry<String, int>>> getTopItems(
-      DateTime start, DateTime end, {int limit = 5}) async {
-    final List<Order> orders = await getOrdersForDateRange(start, end);
+  /// Top selling items by quantity for a date range (excludes cancelled orders)
+  Future<List<MapEntry<String, int>>> getTopItems(DateTime start, DateTime end,
+      {int limit = 5}) async {
+    final List<Order> allOrders = await getOrdersForDateRange(start, end);
+    final orders = allOrders
+        .where((o) => o.orderStatus != AppConstants.statusCancelled)
+        .toList();
     final List<int> orderIds = orders.map((Order o) => o.id).toList();
 
     if (orderIds.isEmpty) return [];
@@ -184,10 +248,13 @@ class OrderRepository {
         .watch();
   }
 
-  /// Get detailed item sales and profit analytics for a date range
+  /// Get detailed item sales and profit analytics for a date range (excludes cancelled orders)
   Future<List<ItemAnalytics>> getItemAnalytics(
       DateTime start, DateTime end) async {
-    final List<Order> orders = await getOrdersForDateRange(start, end);
+    final List<Order> allOrders = await getOrdersForDateRange(start, end);
+    final orders = allOrders
+        .where((o) => o.orderStatus != AppConstants.statusCancelled)
+        .toList();
     final List<int> orderIds = orders.map((Order o) => o.id).toList();
 
     if (orderIds.isEmpty) return [];

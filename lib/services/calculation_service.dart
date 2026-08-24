@@ -69,9 +69,7 @@ class CalculationService {
   // ─── ORDER NUMBER ─────────────────────────────────────────────────────
 
   static String generateOrderNumber(int sequence, [DateTime? date]) {
-    final d = date ?? DateTime.now();
-    final dateStr = '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
-    return 'ORD-$dateStr-${sequence.toString().padLeft(3, '0')}';
+    return sequence.toString().padLeft(3, '0');
   }
 
   // ─── DISCOUNT ─────────────────────────────────────────────────────────

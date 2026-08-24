@@ -9,6 +9,7 @@ import 'data/repositories/settings_repository.dart';
 import 'providers/inventory_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/printer_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/splash_screen.dart';
@@ -76,6 +77,9 @@ class DeliveryBillApp extends StatelessWidget {
           create: (ctx) =>
               ReportProvider(orderRepo: ctx.read<OrderRepository>()),
           update: (_, repo, prev) => prev ?? ReportProvider(orderRepo: repo),
+        ),
+        ChangeNotifierProvider<PrinterProvider>(
+          create: (_) => PrinterProvider(),
         ),
       ],
       child: Consumer<SettingsProvider>(
