@@ -27,7 +27,19 @@ class ItemImageWidget extends StatelessWidget {
     }
 
     Widget content;
-    if (path.startsWith('assets/')) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      content = Image.network(
+        path,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, __, ___) => placeholder,
+        loadingBuilder: (ctx, child, progress) {
+          if (progress == null) return child;
+          return placeholder;
+        },
+      );
+    } else if (path.startsWith('assets/')) {
       content = Image.asset(
         path,
         width: width,

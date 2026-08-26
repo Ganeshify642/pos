@@ -26,227 +26,117 @@ class MockDataService {
     await db.delete(db.categoriesTable).go();
 
     // 3. Insert Categories
-    final catVadapavId = await db.into(db.categoriesTable).insert(
+    final catPopularId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Vadapav Specials'),
+            name: Value('Popular'),
             sortOrder: Value(0),
-            colorHex: Value('#E65100'),
-          ),
-        );
-
-    final catSamosaId = await db.into(db.categoriesTable).insert(
-          const CategoriesTableCompanion(
-            name: Value('Samosa & Puffs'),
-            sortOrder: Value(1),
-            colorHex: Value('#D84315'),
+            colorHex: Value('#EA580C'),
           ),
         );
 
     final catSnacksId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Snacks & Bhajiya'),
-            sortOrder: Value(2),
-            colorHex: Value('#F57C00'),
+            name: Value('Snacks'),
+            sortOrder: Value(1),
+            colorHex: Value('#D84315'),
           ),
         );
 
-    final catBeveragesId = await db.into(db.categoriesTable).insert(
+    final catDrinksId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Beverages & Tea'),
-            sortOrder: Value(3),
+            name: Value('Drinks'),
+            sortOrder: Value(2),
             colorHex: Value('#00897B'),
           ),
         );
 
-    final catCombosId = await db.into(db.categoriesTable).insert(
+    final catMealsId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Value Combos'),
+            name: Value('Meals'),
+            sortOrder: Value(3),
+            colorHex: Value('#F57C00'),
+          ),
+        );
+
+    final catDessertsId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('Desserts'),
             sortOrder: Value(4),
             colorHex: Value('#7B1FA2'),
           ),
         );
 
-    // 4. Insert Menu Items
-    final List<(int, String, String, double, double, int, int)> mockItems = [
-      // Vadapav Specials
+    // 4. Insert Menu Items (Category, Name, Description, SellingPrice, CostPrice, PrepQty, LowStock, ImageUrl)
+    final List<(int, String, String, double, double, int, int, String)> mockItems = [
       (
-        catVadapavId,
-        'Classic Mumbai Vadapav',
-        'Traditional spiced potato patty in pav with spicy garlic chutney & fried green chilli',
-        20.0,
-        9.0,
-        120,
-        15
-      ),
-      (
-        catVadapavId,
-        'Cheese Burst Vadapav',
-        'Loaded with melted Amul mozzarella cheese & signature chutneys',
+        catPopularId,
+        'Vada Pav',
+        'Traditional Mumbai potato vada in soft pav with garlic chutney',
         45.0,
-        22.0,
-        60,
-        10
-      ),
-      (
-        catVadapavId,
-        'Schezwan Spicy Vadapav',
-        'Desi vadapav infused with spicy Chinese schezwan sauce & onions',
-        30.0,
-        13.0,
-        70,
-        10
-      ),
-      (
-        catVadapavId,
-        'Butter Grill Vadapav',
-        'Pav toasted on pan with pure butter until crispy & golden brown',
-        35.0,
-        15.0,
-        50,
-        10
-      ),
-      (
-        catVadapavId,
-        'Ulta Vadapav (Crispy Fried)',
-        'Pav stuffed with batata filling and batter-fried to golden perfection',
-        35.0,
-        14.0,
-        40,
-        8
-      ),
-      (
-        catVadapavId,
-        'Mayo Garlic Vadapav',
-        'Creamy garlic mayonnaise spread with crunchy onions & special masala',
-        35.0,
-        15.0,
-        45,
-        8
-      ),
-
-      // Samosa & Puffs
-      (
-        catSamosaId,
-        'Punjabi Samosa Pav',
-        'Crispy potato pea samosa tucked inside fresh pav with sweet tamarind chutney',
-        25.0,
-        11.0,
-        90,
-        15
-      ),
-      (
-        catSamosaId,
-        'Single Punjabi Samosa',
-        'Large crispy spiced potato and green peas samosa (1 pc)',
-        20.0,
-        9.0,
-        80,
-        15
-      ),
-      (
-        catSamosaId,
-        'Cheese Corn Puff',
-        'Flaky golden baked puff pastry stuffed with sweet corn & cheese',
-        35.0,
-        17.0,
-        35,
-        5
-      ),
-
-      // Snacks & Bhajiya
-      (
-        catSnacksId,
-        'Kanda Bhaji Plate (Onion Pakoda)',
-        'Crispy thinly sliced onion fritters seasoned with carom seeds & spices',
-        40.0,
-        16.0,
-        50,
-        10
-      ),
-      (
-        catSnacksId,
-        'Batata Bhajiya Plate',
-        'Thin sliced potato fritters coated in spiced gram flour batter',
-        40.0,
-        16.0,
-        40,
-        8
-      ),
-      (
-        catSnacksId,
-        'Fried Salted Chillies (Extra)',
-        'Deep fried green chillies seasoned with rock salt & chaat masala',
-        10.0,
-        3.0,
-        100,
-        20
-      ),
-
-      // Beverages & Tea
-      (
-        catBeveragesId,
-        'Special Masala Cutting Chai',
-        'Freshly brewed hot tea with crushed ginger, cardamom & aromatic spices',
-        15.0,
-        5.0,
-        180,
-        25
-      ),
-      (
-        catBeveragesId,
-        'Ginger Cardamom Full Tea',
-        'Full cup aromatic kadak tea with milk & freshly crushed ginger',
-        25.0,
-        8.0,
-        100,
-        15
-      ),
-      (
-        catBeveragesId,
-        'Chilled Masala Chaas (Buttermilk)',
-        'Refreshing spiced buttermilk with roasted cumin, mint & black salt',
-        20.0,
-        7.0,
-        60,
-        10
-      ),
-      (
-        catBeveragesId,
-        'Cold Drink 250ml',
-        'Assorted chilled soft drinks (Thums Up, Sprite, Coke)',
-        25.0,
         18.0,
-        50,
-        10
+        120,
+        15,
+        'https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=600&auto=format&fit=crop',
       ),
-
-      // Value Combos
       (
-        catCombosId,
-        'Chai + Vadapav Combo',
-        '1 Classic Mumbai Vadapav + 1 Masala Cutting Chai (Customer favorite!)',
-        32.0,
-        14.0,
+        catPopularId,
+        'Samosa',
+        'Crispy spiced potato pea samosa with sweet & green chutneys',
+        25.0,
+        10.0,
+        100,
+        15,
+        'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop',
+      ),
+      (
+        catPopularId,
+        'Cheese Vada Pav',
+        'Loaded with melted Amul mozzarella cheese & signature chutneys',
+        55.0,
+        24.0,
+        80,
+        10,
+        'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop',
+      ),
+      (
+        catDrinksId,
+        'Cold Drink',
+        'Chilled soft drink 250ml bottle',
+        30.0,
+        15.0,
+        120,
+        15,
+        'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop',
+      ),
+      (
+        catSnacksId,
+        'Masala Fries',
+        'Crispy potato french fries tossed in peri-peri masala',
+        70.0,
+        25.0,
         60,
-        10
+        10,
+        'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop',
       ),
       (
-        catCombosId,
-        '2 Vadapav + Masala Chai Combo',
-        '2 Classic Vadapav + 1 Masala Cutting Chai',
-        52.0,
-        23.0,
+        catMealsId,
+        'Paneer Wrap',
+        'Grilled spiced paneer tikka wrapped with fresh veggies & mayo',
+        60.0,
+        26.0,
+        50,
+        8,
+        'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&auto=format&fit=crop',
+      ),
+      (
+        catDessertsId,
+        'Chocolate Brownie',
+        'Rich chocolate brownie served with vanilla ice cream',
+        80.0,
+        30.0,
         40,
-        8
-      ),
-      (
-        catCombosId,
-        'Family Feast (4 Vadapav + 2 Chai)',
-        '4 Classic Vadapav + 2 Masala Cutting Chai + Fried Salted Chillies',
-        100.0,
-        45.0,
-        25,
-        5
+        5,
+        'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&auto=format&fit=crop',
       ),
     ];
 
@@ -263,6 +153,7 @@ class MockDataService {
               costPrice: Value(it.$5),
               defaultPrepQty: Value(it.$6),
               lowStockThreshold: Value(it.$7),
+              imageUrl: Value(it.$8),
               isAvailable: const Value(true),
               isDeleted: const Value(false),
             ),

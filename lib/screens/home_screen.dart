@@ -13,7 +13,6 @@ import '../widgets/stat_card.dart';
 import 'create_order/create_order_screen.dart';
 import 'orders_list_screen.dart';
 import 'inventory/inventory_screen.dart';
-import 'menu/menu_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
 import 'order_details_screen.dart';
@@ -26,14 +25,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  Map<String, double> _todayStats = {};
+  int _selectedIndex = 2; // Default to Sell tab (CreateOrderScreen)
 
   final _pages = const [
     _DashboardTab(),
     OrdersListScreen(),
+    CreateOrderScreen(isTabInHome: true),
     _InventoryTab(),
-    _MenuTab(),
+    SettingsScreen(),
   ];
 
   @override
@@ -49,8 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final inventoryProvider = context.read<InventoryProvider>();
     await orderProvider.loadOrders();
     await inventoryProvider.loadInventoryStatus();
-    final stats = await orderProvider.getTodayRevenueSummary();
-    if (mounted) setState(() => _todayStats = stats);
+    await orderProvider.getTodayRevenueSummary();
   }
 
   @override
@@ -60,47 +58,118 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _selectedIndex,
         children: _pages,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 64,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.home_outlined,
+                  selectedIcon: Icons.home,
+                  label: 'Home',
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.receipt_long_outlined,
+                  selectedIcon: Icons.receipt_long,
+                  label: 'Orders',
+                ),
+                // Center Sell Button
+                GestureDetector(
+                  onTap: () => setState(() => _selectedIndex = 2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF4500),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Sell',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF4500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildNavItem(
+                  index: 3,
+                  icon: Icons.inventory_2_outlined,
+                  selectedIcon: Icons.inventory_2,
+                  label: 'Inventory',
+                ),
+                _buildNavItem(
+                  index: 4,
+                  icon: Icons.more_horiz,
+                  selectedIcon: Icons.more_horiz,
+                  label: 'More',
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Orders',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            selectedIcon: Icon(Icons.inventory_2),
-            label: 'Inventory',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            selectedIcon: Icon(Icons.restaurant_menu),
-            label: 'Menu',
-          ),
-        ],
+        ),
       ),
-      floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const CreateOrderScreen(),
-                ));
-                _loadData();
-              },
-              icon: const Icon(Icons.bolt, color: Colors.white),
-              label: const Text('New Quick Sale',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.white)),
-              backgroundColor: AppColors.primary,
-            )
-          : null,
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+  }) {
+    final isSelected = _selectedIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 60,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : icon,
+              color: isSelected ? const Color(0xFFFF4500) : Colors.grey.shade600,
+              size: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? const Color(0xFFFF4500) : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -386,10 +455,4 @@ class _InventoryTab extends StatelessWidget {
   const _InventoryTab();
   @override
   Widget build(BuildContext context) => const InventoryScreen();
-}
-
-class _MenuTab extends StatelessWidget {
-  const _MenuTab();
-  @override
-  Widget build(BuildContext context) => const MenuScreen();
 }
