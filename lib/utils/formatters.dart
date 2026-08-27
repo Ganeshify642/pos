@@ -32,6 +32,9 @@ class AppFormatters {
   /// Format as "18 Aug 2026"
   static String date(DateTime dt) => _dateFmt.format(dt);
 
+  /// Format as "Monday, 24 Aug 2026"
+  static String fullDay(DateTime dt) => DateFormat('EEEE, d MMM yyyy').format(dt);
+
   /// Format as "06:30 PM"
   static String time(DateTime dt) => _timeFmt.format(dt);
 

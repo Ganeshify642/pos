@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/db_types.dart';
-import '../utils/app_colors.dart';
+import '../providers/order_provider.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
-import 'source_badge.dart';
 
 class OrderCard extends StatelessWidget {
   final Order order;
@@ -21,101 +21,212 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final statusColor = _statusColor(order.orderStatus);
+    final statusStyle = _getStatusBadgeStyle(order.orderStatus);
+    final modeStyle = _getModeStyle(order.orderSource);
+    final orderNum = _formatShortOrderNumber(order.orderNumber);
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top row: order number + status badge + source badge
-              Row(
-                children: [
-                  Text(
-                    order.orderNumber,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Left 44x44 Mode Icon Box
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: modeStyle.bgColor,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 8),
-                  SourceBadge(source: _sourceDisplay),
-                  const Spacer(),
-                  _StatusBadge(status: order.orderStatus, color: statusColor),
-                ],
-              ),
-              const SizedBox(height: 8),
+                  child: Icon(
+                    modeStyle.icon,
+                    color: modeStyle.iconColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
 
-              // Middle row: amount + customer phone
-              Row(
-                children: [
-                  Column(
+                // Center Section: Order number, status, source, relative time
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        order.orderSource == AppConstants.sourceOffline
-                            ? AppFormatters.currency(order.finalTotal)
-                            : 'Net: ${AppFormatters.currency(order.netEarnings)}',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (order.orderSource != AppConstants.sourceOffline)
-                        Text(
-                          'Gross: ${AppFormatters.currency(order.grossAmount)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      // Row 1: Order Number + Status Badge
+                      Row(
+                        children: [
+                          Text(
+                            orderNum,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                              letterSpacing: -0.2,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: statusStyle.bgColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              order.orderStatus,
+                              style: TextStyle(
+                                color: statusStyle.textColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+
+                      // Row 2: Source SubIcon + Source String
+                      Row(
+                        children: [
+                          Icon(
+                            _getSourceSubIcon(order.orderSource),
+                            size: 13,
+                            color: const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _sourceDisplay,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+
+                      // Row 3: Clock Icon + Relative Time
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            AppFormatters.relativeTime(order.createdAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF94A3B8),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (order.customerPhone != null &&
+                              order.customerPhone!.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.phone_outlined,
+                              size: 11,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              order.customerPhone!,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
-                  const Spacer(),
-                  if (onInvoiceTap != null)
-                    IconButton(
-                      icon: const Icon(Icons.receipt_long_outlined, size: 20),
-                      color: AppColors.primary,
-                      onPressed: onInvoiceTap,
-                      tooltip: 'View Invoice',
-                    ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 6),
-              // Bottom: time + customer phone
-              Row(
-                children: [
-                  Icon(Icons.access_time,
-                      size: 13,
-                      color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                  const SizedBox(width: 4),
-                  Text(
-                    AppFormatters.relativeTime(order.createdAt),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (order.customerPhone != null) ...[
-                    const SizedBox(width: 12),
-                    Icon(Icons.phone,
-                        size: 13,
-                        color: theme.colorScheme.onSurface.withOpacity(0.4)),
-                    const SizedBox(width: 4),
+                // Right Section: Amount + Item Count
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
                     Text(
-                      order.customerPhone!,
-                      style: theme.textTheme.bodySmall,
+                      AppFormatters.currency(order.finalTotal),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
+                    const SizedBox(height: 3),
+                    _buildItemCountWidget(context),
                   ],
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  String _formatShortOrderNumber(String raw) {
+    if (raw.startsWith('#')) return raw;
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length >= 3) {
+      return '#${digits.substring(digits.length - 3)}';
+    }
+    return '#$raw';
+  }
+
+  Widget _buildItemCountWidget(BuildContext context) {
+    return FutureBuilder(
+      future: context.read<OrderProvider>().getOrderSummary(order.id),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          final items = snapshot.data!.items;
+          final totalQty = items.fold(0, (sum, item) => sum + item.quantity);
+          final label = totalQty == 1 ? '1 item' : '$totalQty items';
+          return Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
     );
   }
 
@@ -126,40 +237,92 @@ class OrderCard extends StatelessWidget {
     return order.orderSource;
   }
 
-  Color _statusColor(String status) {
+  IconData _getSourceSubIcon(String source) {
+    return switch (source) {
+      AppConstants.sourceCounter => Icons.storefront_outlined,
+      AppConstants.sourceTakeaway => Icons.shopping_bag_outlined,
+      AppConstants.sourceDineIn => Icons.flatware_rounded,
+      AppConstants.sourceDelivery => Icons.two_wheeler_outlined,
+      AppConstants.sourceStaff => Icons.person_outline_rounded,
+      _ => Icons.receipt_outlined,
+    };
+  }
+
+  _ModeStyle _getModeStyle(String source) {
+    return switch (source) {
+      AppConstants.sourceStaff => const _ModeStyle(
+          bgColor: Color(0xFFFFF0ED),
+          iconColor: Color(0xFFFF5722),
+          icon: Icons.shopping_bag_outlined,
+        ),
+      AppConstants.sourceCounter => const _ModeStyle(
+          bgColor: Color(0xFFEFF6FF),
+          iconColor: Color(0xFF2563EB),
+          icon: Icons.grid_view_rounded,
+        ),
+      AppConstants.sourceDineIn => const _ModeStyle(
+          bgColor: Color(0xFFF3E8FF),
+          iconColor: Color(0xFF9333EA),
+          icon: Icons.flatware_rounded,
+        ),
+      AppConstants.sourceDelivery => const _ModeStyle(
+          bgColor: Color(0xFFECFDF5),
+          iconColor: Color(0xFF059669),
+          icon: Icons.two_wheeler_outlined,
+        ),
+      _ => const _ModeStyle(
+          bgColor: Color(0xFFFFF0ED),
+          iconColor: Color(0xFFFF5722),
+          icon: Icons.shopping_bag_outlined,
+        ),
+    };
+  }
+
+  _StatusBadgeStyle _getStatusBadgeStyle(String status) {
     return switch (status) {
-      AppConstants.statusPending => AppColors.pending,
-      AppConstants.statusPreparing => AppColors.preparing,
-      AppConstants.statusReady => AppColors.ready,
-      AppConstants.statusCompleted => AppColors.completed,
-      _ => AppColors.textMuted,
+      AppConstants.statusCompleted => const _StatusBadgeStyle(
+          bgColor: Color(0xFFE6F7F0),
+          textColor: Color(0xFF10B981),
+        ),
+      AppConstants.statusPending => const _StatusBadgeStyle(
+          bgColor: Color(0xFFFFF4E5),
+          textColor: Color(0xFFF59E0B),
+        ),
+      AppConstants.statusPreparing => const _StatusBadgeStyle(
+          bgColor: Color(0xFFEFF6FF),
+          textColor: Color(0xFF2563EB),
+        ),
+      AppConstants.statusReady => const _StatusBadgeStyle(
+          bgColor: Color(0xFFECFDF5),
+          textColor: Color(0xFF059669),
+        ),
+      AppConstants.statusCancelled => const _StatusBadgeStyle(
+          bgColor: Color(0xFFFEE2E2),
+          textColor: Color(0xFFEF4444),
+        ),
+      _ => const _StatusBadgeStyle(
+          bgColor: Color(0xFFF1F5F9),
+          textColor: Color(0xFF64748B),
+        ),
     };
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  final Color color;
-
-  const _StatusBadge({required this.status, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+class _ModeStyle {
+  final Color bgColor;
+  final Color iconColor;
+  final IconData icon;
+  const _ModeStyle({
+    required this.bgColor,
+    required this.iconColor,
+    required this.icon,
+  });
 }
+
+class _StatusBadgeStyle {
+  final Color bgColor;
+  final Color textColor;
+  const _StatusBadgeStyle({required this.bgColor, required this.textColor});
+}
+
+
