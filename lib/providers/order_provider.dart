@@ -23,7 +23,6 @@ class OrderProvider extends ChangeNotifier {
   DateTime? _filterDate;
   DateTime? _filterDateStart;
   DateTime? _filterDateEnd;
-
   // ── Create Order Wizard State ─────────────────────────────────────
   String _selectedSource = AppConstants.sourceCounter;
   String? _tableNumber;

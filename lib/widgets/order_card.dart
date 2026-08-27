@@ -23,7 +23,9 @@ class OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusStyle = _getStatusBadgeStyle(order.orderStatus);
     final modeStyle = _getModeStyle(order.orderSource);
-    final orderNum = _formatShortOrderNumber(order.orderNumber);
+    final orderNum = order.orderNumber.startsWith('#')
+        ? order.orderNumber
+        : '#${order.orderNumber}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -66,7 +68,7 @@ class OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Center Section: Order number, status, source, relative time
+                // Center Section: Order number, status, source with bullet dot, item count with icon
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,13 +76,16 @@ class OrderCard extends StatelessWidget {
                       // Row 1: Order Number + Status Badge
                       Row(
                         children: [
-                          Text(
-                            orderNum,
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.2,
+                          Flexible(
+                            child: Text(
+                              orderNum,
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -102,17 +107,20 @@ class OrderCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
 
-                      // Row 2: Source SubIcon + Source String
+                      // Row 2: Colored Bullet Dot + Source String
                       Row(
                         children: [
-                          Icon(
-                            _getSourceSubIcon(order.orderSource),
-                            size: 13,
-                            color: const Color(0xFF64748B),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: modeStyle.iconColor,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               _sourceDisplay,
@@ -129,23 +137,16 @@ class OrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
 
-                      // Row 3: Clock Icon + Relative Time
+                      // Row 3: Calendar/Receipt Icon + Item Count
                       Row(
                         children: [
                           const Icon(
-                            Icons.access_time_rounded,
-                            size: 12,
+                            Icons.calendar_today_outlined,
+                            size: 11,
                             color: Color(0xFF94A3B8),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            AppFormatters.relativeTime(order.createdAt),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
+                          const SizedBox(width: 5),
+                          _buildItemCountWidget(context),
                           if (order.customerPhone != null &&
                               order.customerPhone!.isNotEmpty) ...[
                             const SizedBox(width: 8),
@@ -169,7 +170,7 @@ class OrderCard extends StatelessWidget {
                   ),
                 ),
 
-                // Right Section: Amount + Item Count
+                // Right Section: Amount + Time (e.g. 12:42 PM)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -182,7 +183,14 @@ class OrderCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    _buildItemCountWidget(context),
+                    Text(
+                      AppFormatters.time(order.createdAt),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: 4),
@@ -197,15 +205,6 @@ class OrderCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatShortOrderNumber(String raw) {
-    if (raw.startsWith('#')) return raw;
-    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length >= 3) {
-      return '#${digits.substring(digits.length - 3)}';
-    }
-    return '#$raw';
   }
 
   Widget _buildItemCountWidget(BuildContext context) {
@@ -225,7 +224,13 @@ class OrderCard extends StatelessWidget {
             ),
           );
         }
-        return const SizedBox.shrink();
+        return const Text(
+          '...',
+          style: TextStyle(
+            fontSize: 11.5,
+            color: Color(0xFF94A3B8),
+          ),
+        );
       },
     );
   }
@@ -237,17 +242,6 @@ class OrderCard extends StatelessWidget {
     return order.orderSource;
   }
 
-  IconData _getSourceSubIcon(String source) {
-    return switch (source) {
-      AppConstants.sourceCounter => Icons.storefront_outlined,
-      AppConstants.sourceTakeaway => Icons.shopping_bag_outlined,
-      AppConstants.sourceDineIn => Icons.flatware_rounded,
-      AppConstants.sourceDelivery => Icons.two_wheeler_outlined,
-      AppConstants.sourceStaff => Icons.person_outline_rounded,
-      _ => Icons.receipt_outlined,
-    };
-  }
-
   _ModeStyle _getModeStyle(String source) {
     return switch (source) {
       AppConstants.sourceStaff => const _ModeStyle(
@@ -256,9 +250,14 @@ class OrderCard extends StatelessWidget {
           icon: Icons.shopping_bag_outlined,
         ),
       AppConstants.sourceCounter => const _ModeStyle(
+          bgColor: Color(0xFFFFF0ED),
+          iconColor: Color(0xFFFF5722),
+          icon: Icons.point_of_sale_outlined,
+        ),
+      AppConstants.sourceTakeaway => const _ModeStyle(
           bgColor: Color(0xFFEFF6FF),
           iconColor: Color(0xFF2563EB),
-          icon: Icons.grid_view_rounded,
+          icon: Icons.shopping_bag_outlined,
         ),
       AppConstants.sourceDineIn => const _ModeStyle(
           bgColor: Color(0xFFF3E8FF),
@@ -324,5 +323,6 @@ class _StatusBadgeStyle {
   final Color textColor;
   const _StatusBadgeStyle({required this.bgColor, required this.textColor});
 }
+
 
 
