@@ -28,7 +28,7 @@ class MockDataService {
     // 3. Insert Categories (matching the category list from the app)
     final catBestSellerId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Best Seller Items'),
+            name: Value(' Items'),
             sortOrder: Value(0),
             colorHex: Value('#EA580C'),
           ),
@@ -116,27 +116,109 @@ class MockDataService {
 
     // 4. Insert Menu Items
     // Format: (categoryId, name, description, sellingPrice, costPrice, prepQty, lowStock, imageUrl)
-    final List<(int, String, String, double, double, int, int, String)> mockItems = [
+    final List<(int, String, String, double, double, int, int, String)>
+        mockItems = [
       // ── વડાપાંઉ (Vadapav) ──
-      (catVadapavId, 'સાદા વડાપાંઉ', 'સાદા વડાપાંઉ with chutney', 25.0, 10.0, 100, 15, ''),
+      (
+        catVadapavId,
+        'સાદા વડાપાંઉ',
+        'સાદા વડાપાંઉ with chutney',
+        25.0,
+        10.0,
+        100,
+        15,
+        ''
+      ),
       (catVadapavId, 'અમુલ બટર', 'અમુલ બટર વડાપાંઉ', 30.0, 12.0, 80, 10, ''),
-      (catVadapavId, 'અમુલ ડબલ બટર (Best Seller)', 'અમુલ ડબલ બટર વડાપાંઉ - Best Seller', 35.0, 15.0, 80, 10, ''),
+      (
+        catVadapavId,
+        'અમુલ ડબલ બટર',
+        'અમુલ ડબલ બટર વડાપાંઉ - ',
+        35.0,
+        15.0,
+        80,
+        10,
+        ''
+      ),
       (catVadapavId, 'અમુલ ચીઝ', 'અમુલ ચીઝ વડાપાંઉ', 45.0, 18.0, 60, 10, ''),
-      (catVadapavId, 'ડબલ બટર ચીઝ', 'ડબલ બટર ચીઝ વડાપાંઉ', 55.0, 22.0, 50, 8, ''),
+      (
+        catVadapavId,
+        'ડબલ બટર ચીઝ',
+        'ડબલ બટર ચીઝ વડાપાંઉ',
+        55.0,
+        22.0,
+        50,
+        8,
+        ''
+      ),
       (catVadapavId, 'ડબલ ચીઝ', 'ડબલ ચીઝ વડાપાંઉ', 65.0, 26.0, 40, 8, ''),
-      (catVadapavId, 'ગાર્લિક માયો', 'ગાર્લિક માયો વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
-      (catVadapavId, 'તંદુરી માયો', 'તંદુરી માયો વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
+      (
+        catVadapavId,
+        'ગાર્લિક માયો',
+        'ગાર્લિક માયો વડાપાંઉ',
+        35.0,
+        14.0,
+        60,
+        10,
+        ''
+      ),
+      (
+        catVadapavId,
+        'તંદુરી માયો',
+        'તંદુરી માયો વડાપાંઉ',
+        35.0,
+        14.0,
+        60,
+        10,
+        ''
+      ),
       (catVadapavId, 'સેઝવાન', 'સેઝવાન વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
       (catVadapavId, 'ચીઝ સેઝવાન', 'ચીઝ સેઝવાન વડાપાંઉ', 50.0, 20.0, 40, 8, ''),
-      (catVadapavId, 'અમુલ ચીઝ તંદુરી (Best Seller)', 'અમુલ ચીઝ તંદુરી વડાપાંઉ - Best Seller', 50.0, 20.0, 50, 8, ''),
-      (catVadapavId, 'અમુલ ચીઝ ગાર્લિક (Best Seller)', 'અમુલ ચીઝ ગાર્લિક વડાપાંઉ - Best Seller', 50.0, 20.0, 50, 8, ''),
+      (
+        catVadapavId,
+        'અમુલ ચીઝ તંદુરી',
+        'અમુલ ચીઝ તંદુરી વડાપાંઉ - ',
+        50.0,
+        20.0,
+        50,
+        8,
+        ''
+      ),
+      (
+        catVadapavId,
+        'અમુલ ચીઝ ગાર્લિક',
+        'અમુલ ચીઝ ગાર્લિક વડાપાંઉ - ',
+        50.0,
+        20.0,
+        50,
+        8,
+        ''
+      ),
 
       // ── મમરી પાંઉ (Mamri Pav) ──
       (catMamriPavId, 'મમરી પાંઉ', 'સાદા મમરી પાંઉ', 25.0, 10.0, 60, 10, ''),
-      (catMamriPavId, 'ડબલ બટર મમરી (Best Seller)', 'ડબલ બટર મમરી પાંઉ - Best Seller', 30.0, 12.0, 50, 8, ''),
-      (catMamriPavId, 'ગાર્લિક મમરી', 'ગાર્લિક મમરી પાંઉ', 30.0, 12.0, 50, 8, ''),
+      (
+        catMamriPavId,
+        'ડબલ બટર મમરી',
+        'ડબલ બટર મમરી પાંઉ - ',
+        30.0,
+        12.0,
+        50,
+        8,
+        ''
+      ),
+      (
+        catMamriPavId,
+        'ગાર્લિક મમરી',
+        'ગાર્લિક મમરી પાંઉ',
+        30.0,
+        12.0,
+        50,
+        8,
+        ''
+      ),
       (catMamriPavId, 'તંદુરી મમરી', 'તંદુરી મમરી પાંઉ', 30.0, 12.0, 50, 8, ''),
-      (catMamriPavId, 'ચીઝ મમરી (Best Seller)', 'ચીઝ મમરી પાંઉ - Best Seller', 40.0, 16.0, 40, 8, ''),
+      (catMamriPavId, 'ચીઝ મમરી', 'ચીઝ મમરી પાંઉ - ', 40.0, 16.0, 40, 8, ''),
 
       // ── વડા (Vada) ──
       (catVadaId, 'વડા (૨ નંગ)', 'વડા ૨ નંગ', 30.0, 12.0, 80, 10, ''),
@@ -151,8 +233,26 @@ class MockDataService {
       (catChaashId, 'છાશ', 'છાશ', 15.0, 5.0, 100, 15, ''),
 
       // ── સાઈડ આઇટમ (Side Items) ──
-      (catSideItemId, 'સ્પે. પટ્ટી મરચા (કિલો)', 'સ્પેશ્યલ પટ્ટી મરચા - 1 કિલો', 300.0, 150.0, 10, 3, ''),
-      (catSideItemId, 'એક્સ્ટ્રા પટ્ટી (100 ગ્રામ)', 'એક્સ્ટ્રા પટ્ટી - 100 ગ્રામ', 30.0, 15.0, 50, 10, ''),
+      (
+        catSideItemId,
+        'સ્પે. પટ્ટી મરચા (કિલો)',
+        'સ્પેશ્યલ પટ્ટી મરચા - 1 કિલો',
+        300.0,
+        150.0,
+        10,
+        3,
+        ''
+      ),
+      (
+        catSideItemId,
+        'એક્સ્ટ્રા પટ્ટી (100 ગ્રામ)',
+        'એક્સ્ટ્રા પટ્ટી - 100 ગ્રામ',
+        30.0,
+        15.0,
+        50,
+        10,
+        ''
+      ),
     ];
 
     final Map<String, int> itemNameToId = {};
@@ -174,7 +274,9 @@ class MockDataService {
             ),
           );
       itemNameToId[it.$2] = id;
-      final createdItem = await (db.select(db.itemsTable)..where((t) => t.id.equals(id))).getSingle();
+      final createdItem = await (db.select(db.itemsTable)
+            ..where((t) => t.id.equals(id)))
+          .getSingle();
       itemMap[id] = createdItem;
     }
 
@@ -194,15 +296,20 @@ class MockDataService {
               madeQty: Value(made),
               soldQty: Value(sold),
               wastedQty: Value(wasted),
-              createdAt: Value(DateTime.now().subtract(const Duration(hours: 6))),
+              createdAt:
+                  Value(DateTime.now().subtract(const Duration(hours: 6))),
               updatedAt: Value(DateTime.now()),
             ),
           );
     }
 
     // 6. Generate Realistic Sample Orders (Today, Yesterday, Earlier this week)
-    final business = await (db.select(db.businessSettingsTable)..where((t) => t.id.equals(1))).getSingle();
-    final tax = await (db.select(db.taxSettingsTable)..where((t) => t.id.equals(1))).getSingle();
+    final business = await (db.select(db.businessSettingsTable)
+          ..where((t) => t.id.equals(1)))
+        .getSingle();
+    final tax = await (db.select(db.taxSettingsTable)
+          ..where((t) => t.id.equals(1)))
+        .getSingle();
 
     final now = DateTime.now();
 
@@ -214,7 +321,7 @@ class MockDataService {
         paymentMethod: AppConstants.paymentUPI,
         items: [
           ('સાદા વડાપાંઉ', 2, ''),
-          ('અમુલ ડબલ બટર (Best Seller)', 1, ''),
+          ('અમુલ ડબલ બટર', 1, ''),
         ],
       ),
       _MockOrderDef(
@@ -224,7 +331,7 @@ class MockDataService {
         paymentMethod: AppConstants.paymentCash,
         items: [
           ('અમુલ ચીઝ', 2, 'Extra cheese'),
-          ('ચીઝ મમરી (Best Seller)', 1, ''),
+          ('ચીઝ મમરી', 1, ''),
           ('છાશ', 2, ''),
         ],
       ),
@@ -234,8 +341,8 @@ class MockDataService {
         customerPhone: '9820198201',
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('અમુલ ડબલ બટર (Best Seller)', 3, ''),
-          ('ડબલ બટર મમરી (Best Seller)', 2, ''),
+          ('અમુલ ડબલ બટર ()', 3, ''),
+          ('ડબલ બટર મમરી ()', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -304,8 +411,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('અમુલ ચીઝ તંદુરી (Best Seller)', 2, ''),
-          ('ડબલ બટર મમરી (Best Seller)', 2, ''),
+          ('અમુલ ચીઝ તંદુરી', 2, ''),
+          ('ડબલ બટર મમરી', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -318,8 +425,8 @@ class MockDataService {
         deliveryFee: 30.0,
         paymentMethod: 'Swiggy Online',
         items: [
-          ('અમુલ ચીઝ ગાર્લિક (Best Seller)', 2, ''),
-          ('ચીઝ મમરી (Best Seller)', 2, ''),
+          ('અમુલ ચીઝ ગાર્લિક', 2, ''),
+          ('ચીઝ મમરી', 2, ''),
           ('છાશ', 4, ''),
         ],
       ),
@@ -423,17 +530,24 @@ class MockDataService {
       );
 
       final orderId = await db.transaction(() async {
-        final insertedOrderId = await db.into(db.ordersTable).insert(orderCompanion);
+        final insertedOrderId =
+            await db.into(db.ordersTable).insert(orderCompanion);
         for (final ic in itemCompanions) {
-          await db.into(db.orderItemsTable).insert(ic.copyWith(orderId: Value(insertedOrderId)));
+          await db
+              .into(db.orderItemsTable)
+              .insert(ic.copyWith(orderId: Value(insertedOrderId)));
         }
         return insertedOrderId;
       });
 
       // Generate invoice PDF
       try {
-        final createdOrder = await (db.select(db.ordersTable)..where((t) => t.id.equals(orderId))).getSingle();
-        final createdItems = await (db.select(db.orderItemsTable)..where((t) => t.orderId.equals(orderId))).get();
+        final createdOrder = await (db.select(db.ordersTable)
+              ..where((t) => t.id.equals(orderId)))
+            .getSingle();
+        final createdItems = await (db.select(db.orderItemsTable)
+              ..where((t) => t.orderId.equals(orderId)))
+            .get();
         final pdfPath = await InvoiceService.generateInvoice(
           order: createdOrder,
           items: createdItems,

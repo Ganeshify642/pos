@@ -60,6 +60,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   print_bluetooth_thermal: ^1.2.1
+  image: ^4.3.0
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +76,16 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/fonts/
+
+  fonts:
+    - family: NotoSansGujarati
+      fonts:
+        - asset: assets/fonts/NotoSansGujarati-Regular.ttf
+        - asset: assets/fonts/NotoSansGujarati-Bold.ttf
+          weight: 700
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
 
 flutter_launcher_icons:
   android: true

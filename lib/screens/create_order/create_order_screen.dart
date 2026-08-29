@@ -29,7 +29,7 @@ class CreateOrderScreen extends StatefulWidget {
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  // -1 = Best Seller Items (virtual, shows all items with best sellers first)
+  // -1 =  Items (virtual, shows all items with s first)
   // null = All items (no filter)
   // positive int = specific category
   int? _selectedCategoryId = -1;
@@ -78,17 +78,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     setState(() => _isSubmitting = false);
 
     if (summary != null) {
-      final printer = context.read<PrinterProvider>();
-      // Print immediately to connected thermal printer
-      if (printer.isConnected) {
-        printer.printOrderReceipt(
-          order: summary.order,
-          items: summary.items,
-          business: settings.businessSettings!,
-          taxSettings: settings.taxSettings!,
-        );
-      }
-
       Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => InvoicePreviewScreen(
           orderId: summary.order.id,
@@ -172,7 +161,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long_outlined, color: Colors.black87),
+            icon:
+                const Icon(Icons.receipt_long_outlined, color: Colors.black87),
             tooltip: 'View Orders List',
             onPressed: () {
               Navigator.of(context).push(
@@ -250,7 +240,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isStaff ? const Color(0xFF7C3AED).withValues(alpha: 0.5) : const Color(0xFFE5E7EB),
+                  color: isStaff
+                      ? const Color(0xFF7C3AED).withValues(alpha: 0.5)
+                      : const Color(0xFFE5E7EB),
                   width: isStaff ? 1.5 : 1,
                 ),
               ),
@@ -330,13 +322,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 color: isStaff ? const Color(0xFF7C3AED) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFE5E7EB),
+                  color: isStaff
+                      ? const Color(0xFF7C3AED)
+                      : const Color(0xFFE5E7EB),
                   width: 1.5,
                 ),
                 boxShadow: isStaff
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                          color:
+                              const Color(0xFF7C3AED).withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -382,9 +377,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          // Best Seller Items - always first, acts as virtual "all with best sellers first"
+          //  Items - always first, acts as virtual "all with s first"
           _buildCategoryPill(
-            title: 'Best Seller Items',
+            title: ' Items',
             isSelected: _selectedCategoryId == -1,
             onTap: () => setState(() => _selectedCategoryId = -1),
           ),
@@ -395,9 +390,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             onTap: () => setState(() => _selectedCategoryId = null),
           ),
           const SizedBox(width: 8),
-          ...categories
-              .where((cat) => cat.name != 'Best Seller Items')
-              .map((cat) {
+          ...categories.where((cat) => cat.name != ' Items').map((cat) {
             final isSel = _selectedCategoryId == cat.id;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -427,7 +420,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           color: isSelected ? const Color(0xFFFF4500) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF4500) : const Color(0xFFE5E7EB),
+            color:
+                isSelected ? const Color(0xFFFF4500) : const Color(0xFFE5E7EB),
             width: 1,
           ),
         ),
@@ -454,11 +448,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     var items = menuProvider.items;
 
     if (_selectedCategoryId == -1) {
-      // Best Seller Items: show ALL items, but sort best sellers to top
+      //  Items: show ALL items, but sort s to top
       items = List<Item>.from(items);
       items.sort((a, b) {
-        final aIsBest = a.name.contains('Best Seller') ? 0 : 1;
-        final bIsBest = b.name.contains('Best Seller') ? 0 : 1;
+        final aIsBest = a.name.contains('') ? 0 : 1;
+        final bIsBest = b.name.contains('') ? 0 : 1;
         return aIsBest.compareTo(bIsBest);
       });
     } else if (_selectedCategoryId != null) {
@@ -486,8 +480,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           if (context.mounted) {
             await context.read<SettingsProvider>().loadSettings();
             if (context.mounted) await context.read<MenuProvider>().loadAll();
-            if (context.mounted) await context.read<InventoryProvider>().loadInventoryStatus();
-            if (context.mounted) await context.read<OrderProvider>().loadOrders();
+            if (context.mounted)
+              await context.read<InventoryProvider>().loadInventoryStatus();
+            if (context.mounted)
+              await context.read<OrderProvider>().loadOrders();
           }
         },
       );
@@ -518,41 +514,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
           itemCount: items.length,
           itemBuilder: (ctx, idx) {
-        final item = items[idx];
-        final qty = orderProvider.getCartQty(item.id);
-        return ProductGridCard(
-          item: item,
-          quantity: qty,
-          onAdd: () {
-            orderProvider.addItemToCart(CartItem(
-              itemId: item.id,
-              itemName: item.name,
-              price: item.sellingPrice,
-            ));
-          },
-          onRemove: () {
-            orderProvider.removeItemFromCart(item.id);
-          },
-          onSetQuantity: () {
-            _showQuantityDialog(
-              context,
-              itemName: item.name,
-              initialQty: qty,
-              onConfirm: (newQty) {
-                orderProvider.setItemQuantity(
-                  item.id,
-                  newQty,
-                  itemTemplate: CartItem(
-                    itemId: item.id,
-                    itemName: item.name,
-                    price: item.sellingPrice,
-                  ),
+            final item = items[idx];
+            final qty = orderProvider.getCartQty(item.id);
+            return ProductGridCard(
+              item: item,
+              quantity: qty,
+              onAdd: () {
+                orderProvider.addItemToCart(CartItem(
+                  itemId: item.id,
+                  itemName: item.name,
+                  price: item.sellingPrice,
+                ));
+              },
+              onRemove: () {
+                orderProvider.removeItemFromCart(item.id);
+              },
+              onSetQuantity: () {
+                _showQuantityDialog(
+                  context,
+                  itemName: item.name,
+                  initialQty: qty,
+                  onConfirm: (newQty) {
+                    orderProvider.setItemQuantity(
+                      item.id,
+                      newQty,
+                      itemTemplate: CartItem(
+                        itemId: item.id,
+                        itemName: item.name,
+                        price: item.sellingPrice,
+                      ),
+                    );
+                  },
                 );
               },
             );
           },
-        );
-      },
         );
       },
     );
@@ -598,7 +594,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
                 child: Icon(
                   isStaff ? Icons.badge : Icons.shopping_cart_outlined,
-                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
+                  color: isStaff
+                      ? const Color(0xFF7C3AED)
+                      : const Color(0xFFFF4500),
                   size: 22,
                 ),
               ),
@@ -609,7 +607,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   width: 18,
                   height: 18,
                   decoration: BoxDecoration(
-                    color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFE53935),
+                    color: isStaff
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFFE53935),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -645,7 +645,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   if (isStaff) ...[
                     const SizedBox(width: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
@@ -718,7 +719,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submitOrder,
             style: ElevatedButton.styleFrom(
-              backgroundColor: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
+              backgroundColor:
+                  isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -729,13 +731,16 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isStaff ? Icons.check_circle_outline : Icons.print_rounded,
+                        isStaff
+                            ? Icons.check_circle_outline
+                            : Icons.print_rounded,
                         size: 18,
                         color: Colors.white,
                       ),
@@ -770,12 +775,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: (isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500)).withValues(alpha: 0.08),
+            color: (isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500))
+                .withValues(alpha: 0.08),
             child: Row(
               children: [
                 Icon(
                   isStaff ? Icons.badge : Icons.shopping_cart,
-                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
+                  color: isStaff
+                      ? const Color(0xFF7C3AED)
+                      : const Color(0xFFFF4500),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -839,7 +847,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
           Expanded(
             child: op.cartItems.isEmpty
-                ? const Center(child: Text('Cart is empty. Select items to add.'))
+                ? const Center(
+                    child: Text('Cart is empty. Select items to add.'))
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: op.cartItems.length,
@@ -856,7 +865,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 children: [
                                   Text(
                                     item.itemName,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
                                   ),
                                   Text(
                                     '${AppFormatters.currency(item.price)} each',
@@ -868,18 +878,23 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                  onPressed: () => op.removeItemFromCart(item.itemId),
+                                  icon: const Icon(Icons.remove_circle_outline,
+                                      size: 20),
+                                  onPressed: () =>
+                                      op.removeItemFromCart(item.itemId),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 6),
                                   child: Text(
                                     '${item.quantity}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                                  icon: const Icon(Icons.add_circle_outline,
+                                      size: 20),
                                   onPressed: () => op.addItemToCart(item),
                                 ),
                               ],
@@ -887,7 +902,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             const SizedBox(width: 8),
                             Text(
                               AppFormatters.currency(item.lineTotal),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -917,10 +933,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: op.cartItems.isEmpty || _isSubmitting ? null : _submitOrder,
+                    onPressed: op.cartItems.isEmpty || _isSubmitting
+                        ? null
+                        : _submitOrder,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
+                      backgroundColor: isStaff
+                          ? const Color(0xFF7C3AED)
+                          : const Color(0xFFFF4500),
                     ),
                     child: _isSubmitting
                         ? const CircularProgressIndicator(color: Colors.white)
@@ -928,13 +948,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                isStaff ? Icons.check_circle_outline : Icons.print_rounded,
+                                isStaff
+                                    ? Icons.check_circle_outline
+                                    : Icons.print_rounded,
                                 color: Colors.white,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                isStaff ? 'Save Staff Order' : 'Print & Save Bill →',
+                                isStaff
+                                    ? 'Save Staff Order'
+                                    : 'Print & Save Bill →',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -962,7 +986,8 @@ Future<void> _showQuantityDialog(
   required int initialQty,
   required ValueChanged<int> onConfirm,
 }) async {
-  final controller = TextEditingController(text: initialQty > 0 ? '$initialQty' : '1');
+  final controller =
+      TextEditingController(text: initialQty > 0 ? '$initialQty' : '1');
   final result = await showDialog<int>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -1007,8 +1032,10 @@ Future<void> _showQuantityDialog(
               Navigator.of(ctx).pop(parsed);
             }
           },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF4500)),
-          child: const Text('Set Quantity', style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF4500)),
+          child:
+              const Text('Set Quantity', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),
@@ -1047,7 +1074,9 @@ class ProductGridCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: quantity > 0 ? const Color(0xFFFF4500) : const Color(0xFFF3F4F6),
+            color: quantity > 0
+                ? const Color(0xFFFF4500)
+                : const Color(0xFFF3F4F6),
             width: quantity > 0 ? 1.5 : 1.5,
           ),
           boxShadow: [
@@ -1066,7 +1095,8 @@ class ProductGridCard extends StatelessWidget {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
                     child: ItemImageWidget(
                       imageUrl: item.imageUrl,
                       width: double.infinity,
@@ -1195,7 +1225,8 @@ class ProductGridCard extends StatelessWidget {
                           InkWell(
                             onTap: onSetQuantity,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
