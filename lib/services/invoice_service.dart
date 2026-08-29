@@ -24,18 +24,24 @@ class InvoiceService {
     required BusinessSetting businessSettings,
     required TaxSetting taxSettings,
   }) async {
-    // Load NotoSans font that supports the ₹ (Indian Rupee) glyph
-    final fontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-    final notoSans = pw.Font.ttf(fontData);
+    // Load Gujarati fonts with Latin fallback so Gujarati and English/₹ text render properly
+    final gujaratiFontData = await rootBundle.load('assets/fonts/NotoSansGujarati-Regular.ttf');
+    final gujaratiBoldData = await rootBundle.load('assets/fonts/NotoSansGujarati-Bold.ttf');
+    final latinFontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+
+    final notoSansGujarati = pw.Font.ttf(gujaratiFontData);
+    final notoSansGujaratiBold = pw.Font.ttf(gujaratiBoldData);
+    final notoSansLatin = pw.Font.ttf(latinFontData);
 
     final pdf = pw.Document(
       title: 'Invoice ${order.orderNumber}',
       author: businessSettings.businessName,
       theme: pw.ThemeData.withFont(
-        base: notoSans,
-        bold: notoSans,
-        italic: notoSans,
-        boldItalic: notoSans,
+        base: notoSansGujarati,
+        bold: notoSansGujaratiBold,
+        italic: notoSansGujarati,
+        boldItalic: notoSansGujaratiBold,
+        fontFallback: [notoSansGujarati, notoSansGujaratiBold, notoSansLatin],
       ),
     );
 

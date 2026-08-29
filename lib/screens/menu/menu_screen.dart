@@ -109,9 +109,13 @@ class _MenuScreenState extends State<MenuScreen>
                 children: [
                   _CategoriesTab(
                     onAddCategory: () => _showCategoryForm(context),
+                    onEditCategory: (cat) => _showCategoryForm(context, cat),
                     onEditItem: (item) => _showItemForm(context, item),
                   ),
-                  _ItemsTab(onAddItem: () => _showItemForm(context)),
+                  _ItemsTab(
+                    onAddItem: () => _showItemForm(context),
+                    onEditItem: (item) => _showItemForm(context, item),
+                  ),
                 ],
               ),
             ),
@@ -121,8 +125,9 @@ class _MenuScreenState extends State<MenuScreen>
     );
   }
 
-  void _showCategoryForm(BuildContext context) {
-    final nameController = TextEditingController();
+  void _showCategoryForm(BuildContext context, [Category? category]) {
+    final nameController = TextEditingController(text: category?.name ?? '');
+    final isEdit = category != null;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -133,7 +138,7 @@ class _MenuScreenState extends State<MenuScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Add Category',
+            Text(isEdit ? 'Edit Category' : 'Add Category',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             TextField(
@@ -147,13 +152,21 @@ class _MenuScreenState extends State<MenuScreen>
               child: ElevatedButton(
                 onPressed: () {
                   if (nameController.text.trim().isNotEmpty) {
-                    context
-                        .read<MenuProvider>()
-                        .addCategory(nameController.text.trim());
+                    if (isEdit) {
+                      context.read<MenuProvider>().updateCategory(
+                            category.id,
+                            nameController.text.trim(),
+                            category.colorHex,
+                          );
+                    } else {
+                      context
+                          .read<MenuProvider>()
+                          .addCategory(nameController.text.trim());
+                    }
                     Navigator.pop(_);
                   }
                 },
-                child: const Text('Add Category'),
+                child: Text(isEdit ? 'Save Changes' : 'Add Category'),
               ),
             ),
           ],
@@ -173,10 +186,12 @@ class _MenuScreenState extends State<MenuScreen>
 
 class _CategoriesTab extends StatelessWidget {
   final VoidCallback onAddCategory;
+  final Function(Category) onEditCategory;
   final Function(Item) onEditItem;
 
   const _CategoriesTab({
     required this.onAddCategory,
+    required this.onEditCategory,
     required this.onEditItem,
   });
 
@@ -240,6 +255,11 @@ class _CategoriesTab extends StatelessWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
+                  onPressed: () => onEditCategory(cat),
+                  tooltip: 'Edit Category',
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.outOfStock),
                   onPressed: () => context.read<MenuProvider>().deleteCategory(cat.id),
@@ -325,7 +345,8 @@ class _CategoriesTab extends StatelessWidget {
 
 class _ItemsTab extends StatelessWidget {
   final VoidCallback onAddItem;
-  const _ItemsTab({required this.onAddItem});
+  final Function(Item) onEditItem;
+  const _ItemsTab({required this.onAddItem, required this.onEditItem});
 
   @override
   Widget build(BuildContext context) {
@@ -391,6 +412,11 @@ class _ItemsTab extends StatelessWidget {
                           .read<MenuProvider>()
                           .toggleItemAvailability(item.id, v),
                       activeColor: AppColors.accent,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => onEditItem(item),
+                      tooltip: 'Edit Item',
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),

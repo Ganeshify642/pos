@@ -67,6 +67,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.20.3
   build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
@@ -74,3 +75,10 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/fonts/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/gopal_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/gopal_logo.png"

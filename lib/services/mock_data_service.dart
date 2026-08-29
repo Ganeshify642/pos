@@ -11,10 +11,10 @@ class MockDataService {
     // 1. Update Business Settings
     await (db.update(db.businessSettingsTable)..where((t) => t.id.equals(1)))
         .write(const BusinessSettingsTableCompanion(
-      businessName: Value('Gopal Vadapav & Fast Food'),
-      phone: Value('+91 98765 43210'),
-      address: Value('Shop #4, Station Road, Opp. Platform 1, Mumbai - 400001'),
-      gstId: Value('27AABCU9603R1ZM'),
+      businessName: Value('ગોપાલ વડાપાંઉ'),
+      phone: Value('+91 92650 53568'),
+      address: Value('ગોપાલ વડાપાંઉ'),
+      gstId: Value(''),
     ));
 
     // 2. Clear existing menu, inventory & orders to prevent duplicates
@@ -25,119 +25,134 @@ class MockDataService {
     await db.delete(db.itemsTable).go();
     await db.delete(db.categoriesTable).go();
 
-    // 3. Insert Categories
-    final catPopularId = await db.into(db.categoriesTable).insert(
+    // 3. Insert Categories (matching the category list from the app)
+    final catBestSellerId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Popular'),
+            name: Value('Best Seller Items'),
             sortOrder: Value(0),
             colorHex: Value('#EA580C'),
           ),
         );
 
-    final catSnacksId = await db.into(db.categoriesTable).insert(
+    final catPattiId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Snacks'),
+            name: Value('Patti'),
             sortOrder: Value(1),
             colorHex: Value('#D84315'),
           ),
         );
 
-    final catDrinksId = await db.into(db.categoriesTable).insert(
+    final catPufId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Drinks'),
+            name: Value('Puf'),
             sortOrder: Value(2),
-            colorHex: Value('#00897B'),
-          ),
-        );
-
-    final catMealsId = await db.into(db.categoriesTable).insert(
-          const CategoriesTableCompanion(
-            name: Value('Meals'),
-            sortOrder: Value(3),
             colorHex: Value('#F57C00'),
           ),
         );
 
-    final catDessertsId = await db.into(db.categoriesTable).insert(
+    final catRollId = await db.into(db.categoriesTable).insert(
           const CategoriesTableCompanion(
-            name: Value('Desserts'),
-            sortOrder: Value(4),
-            colorHex: Value('#7B1FA2'),
+            name: Value('Roll'),
+            sortOrder: Value(3),
+            colorHex: Value('#FF8F00'),
           ),
         );
 
-    // 4. Insert Menu Items (Category, Name, Description, SellingPrice, CostPrice, PrepQty, LowStock, ImageUrl)
+    final catChatneeId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('ચટણી'),
+            sortOrder: Value(4),
+            colorHex: Value('#00897B'),
+          ),
+        );
+
+    final catChaashId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('છાશ'),
+            sortOrder: Value(5),
+            colorHex: Value('#0288D1'),
+          ),
+        );
+
+    final catPizzaId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('પીઝા'),
+            sortOrder: Value(6),
+            colorHex: Value('#C62828'),
+          ),
+        );
+
+    final catMamriPavId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('મમરી પાંઉ'),
+            sortOrder: Value(7),
+            colorHex: Value('#6A1B9A'),
+          ),
+        );
+
+    final catVadaId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('વડા'),
+            sortOrder: Value(8),
+            colorHex: Value('#AD1457'),
+          ),
+        );
+
+    final catVadapavId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('વડાપાંઉ'),
+            sortOrder: Value(9),
+            colorHex: Value('#E65100'),
+          ),
+        );
+
+    final catSideItemId = await db.into(db.categoriesTable).insert(
+          const CategoriesTableCompanion(
+            name: Value('સાઈડ આઇટમ'),
+            sortOrder: Value(10),
+            colorHex: Value('#4E342E'),
+          ),
+        );
+
+    // 4. Insert Menu Items
+    // Format: (categoryId, name, description, sellingPrice, costPrice, prepQty, lowStock, imageUrl)
     final List<(int, String, String, double, double, int, int, String)> mockItems = [
-      (
-        catPopularId,
-        'Vada Pav',
-        'Traditional Mumbai potato vada in soft pav with garlic chutney',
-        45.0,
-        18.0,
-        120,
-        15,
-        'https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=600&auto=format&fit=crop',
-      ),
-      (
-        catPopularId,
-        'Samosa',
-        'Crispy spiced potato pea samosa with sweet & green chutneys',
-        25.0,
-        10.0,
-        100,
-        15,
-        'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&fit=crop',
-      ),
-      (
-        catPopularId,
-        'Cheese Vada Pav',
-        'Loaded with melted Amul mozzarella cheese & signature chutneys',
-        55.0,
-        24.0,
-        80,
-        10,
-        'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop',
-      ),
-      (
-        catDrinksId,
-        'Cold Drink',
-        'Chilled soft drink 250ml bottle',
-        30.0,
-        15.0,
-        120,
-        15,
-        'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop',
-      ),
-      (
-        catSnacksId,
-        'Masala Fries',
-        'Crispy potato french fries tossed in peri-peri masala',
-        70.0,
-        25.0,
-        60,
-        10,
-        'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop',
-      ),
-      (
-        catMealsId,
-        'Paneer Wrap',
-        'Grilled spiced paneer tikka wrapped with fresh veggies & mayo',
-        60.0,
-        26.0,
-        50,
-        8,
-        'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&auto=format&fit=crop',
-      ),
-      (
-        catDessertsId,
-        'Chocolate Brownie',
-        'Rich chocolate brownie served with vanilla ice cream',
-        80.0,
-        30.0,
-        40,
-        5,
-        'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600&auto=format&fit=crop',
-      ),
+      // ── વડાપાંઉ (Vadapav) ──
+      (catVadapavId, 'સાદા વડાપાંઉ', 'સાદા વડાપાંઉ with chutney', 25.0, 10.0, 100, 15, ''),
+      (catVadapavId, 'અમુલ બટર', 'અમુલ બટર વડાપાંઉ', 30.0, 12.0, 80, 10, ''),
+      (catVadapavId, 'અમુલ ડબલ બટર (Best Seller)', 'અમુલ ડબલ બટર વડાપાંઉ - Best Seller', 35.0, 15.0, 80, 10, ''),
+      (catVadapavId, 'અમુલ ચીઝ', 'અમુલ ચીઝ વડાપાંઉ', 45.0, 18.0, 60, 10, ''),
+      (catVadapavId, 'ડબલ બટર ચીઝ', 'ડબલ બટર ચીઝ વડાપાંઉ', 55.0, 22.0, 50, 8, ''),
+      (catVadapavId, 'ડબલ ચીઝ', 'ડબલ ચીઝ વડાપાંઉ', 65.0, 26.0, 40, 8, ''),
+      (catVadapavId, 'ગાર્લિક માયો', 'ગાર્લિક માયો વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
+      (catVadapavId, 'તંદુરી માયો', 'તંદુરી માયો વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
+      (catVadapavId, 'સેઝવાન', 'સેઝવાન વડાપાંઉ', 35.0, 14.0, 60, 10, ''),
+      (catVadapavId, 'ચીઝ સેઝવાન', 'ચીઝ સેઝવાન વડાપાંઉ', 50.0, 20.0, 40, 8, ''),
+      (catVadapavId, 'અમુલ ચીઝ તંદુરી (Best Seller)', 'અમુલ ચીઝ તંદુરી વડાપાંઉ - Best Seller', 50.0, 20.0, 50, 8, ''),
+      (catVadapavId, 'અમુલ ચીઝ ગાર્લિક (Best Seller)', 'અમુલ ચીઝ ગાર્લિક વડાપાંઉ - Best Seller', 50.0, 20.0, 50, 8, ''),
+
+      // ── મમરી પાંઉ (Mamri Pav) ──
+      (catMamriPavId, 'મમરી પાંઉ', 'સાદા મમરી પાંઉ', 25.0, 10.0, 60, 10, ''),
+      (catMamriPavId, 'ડબલ બટર મમરી (Best Seller)', 'ડબલ બટર મમરી પાંઉ - Best Seller', 30.0, 12.0, 50, 8, ''),
+      (catMamriPavId, 'ગાર્લિક મમરી', 'ગાર્લિક મમરી પાંઉ', 30.0, 12.0, 50, 8, ''),
+      (catMamriPavId, 'તંદુરી મમરી', 'તંદુરી મમરી પાંઉ', 30.0, 12.0, 50, 8, ''),
+      (catMamriPavId, 'ચીઝ મમરી (Best Seller)', 'ચીઝ મમરી પાંઉ - Best Seller', 40.0, 16.0, 40, 8, ''),
+
+      // ── વડા (Vada) ──
+      (catVadaId, 'વડા (૨ નંગ)', 'વડા ૨ નંગ', 30.0, 12.0, 80, 10, ''),
+      (catVadaId, 'બટર વડા', 'બટર વડા', 40.0, 16.0, 60, 8, ''),
+      (catVadaId, 'ચીઝ વડા', 'અમુલ ચીઝ વડા', 50.0, 20.0, 40, 8, ''),
+
+      // ── ચટણી (Chatni) ──
+      (catChatneeId, 'બટર ચટણી', 'બટર ચટણી', 10.0, 4.0, 100, 15, ''),
+      (catChatneeId, 'ચીઝ ચટણી', 'ચીઝ ચટણી', 20.0, 8.0, 80, 10, ''),
+
+      // ── છાશ (Chhaash) ──
+      (catChaashId, 'છાશ', 'છાશ', 15.0, 5.0, 100, 15, ''),
+
+      // ── સાઈડ આઇટમ (Side Items) ──
+      (catSideItemId, 'સ્પે. પટ્ટી મરચા (કિલો)', 'સ્પેશ્યલ પટ્ટી મરચા - 1 કિલો', 300.0, 150.0, 10, 3, ''),
+      (catSideItemId, 'એક્સ્ટ્રા પટ્ટી (100 ગ્રામ)', 'એક્સ્ટ્રા પટ્ટી - 100 ગ્રામ', 30.0, 15.0, 50, 10, ''),
     ];
 
     final Map<String, int> itemNameToId = {};
@@ -153,7 +168,7 @@ class MockDataService {
               costPrice: Value(it.$5),
               defaultPrepQty: Value(it.$6),
               lowStockThreshold: Value(it.$7),
-              imageUrl: Value(it.$8),
+              imageUrl: Value(it.$8.isEmpty ? null : it.$8),
               isAvailable: const Value(true),
               isDeleted: const Value(false),
             ),
@@ -198,8 +213,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('Classic Mumbai Vadapav', 2, ''),
-          ('Special Masala Cutting Chai', 2, 'Extra ginger'),
+          ('સાદા વડાપાંઉ', 2, ''),
+          ('અમુલ ડબલ બટર (Best Seller)', 1, ''),
         ],
       ),
       _MockOrderDef(
@@ -208,9 +223,9 @@ class MockDataService {
         tableName: 'Table 2',
         paymentMethod: AppConstants.paymentCash,
         items: [
-          ('Cheese Burst Vadapav', 2, 'Extra cheese'),
-          ('Kanda Bhaji Plate (Onion Pakoda)', 1, 'Crispy'),
-          ('Chilled Masala Chaas (Buttermilk)', 2, ''),
+          ('અમુલ ચીઝ', 2, 'Extra cheese'),
+          ('ચીઝ મમરી (Best Seller)', 1, ''),
+          ('છાશ', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -219,8 +234,8 @@ class MockDataService {
         customerPhone: '9820198201',
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('Chai + Vadapav Combo', 3, 'Packed separately'),
-          ('Butter Grill Vadapav', 2, ''),
+          ('અમુલ ડબલ બટર (Best Seller)', 3, ''),
+          ('ડબલ બટર મમરી (Best Seller)', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -233,8 +248,9 @@ class MockDataService {
         deliveryFee: 30.0,
         paymentMethod: 'Swiggy Online',
         items: [
-          ('Family Feast (4 Vadapav + 2 Chai)', 1, 'Pack with extra fried chillies'),
-          ('Ulta Vadapav (Crispy Fried)', 2, ''),
+          ('ડબલ ચીઝ', 2, ''),
+          ('ચીઝ સેઝવાન', 2, ''),
+          ('છાશ', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -242,8 +258,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentCash,
         items: [
-          ('Classic Mumbai Vadapav', 4, ''),
-          ('Special Masala Cutting Chai', 4, ''),
+          ('સાદા વડાપાંઉ', 4, ''),
+          ('વડા (૨ નંગ)', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -256,9 +272,9 @@ class MockDataService {
         deliveryFee: 30.0,
         paymentMethod: 'Zomato Online',
         items: [
-          ('Schezwan Spicy Vadapav', 3, ''),
-          ('Punjabi Samosa Pav', 3, ''),
-          ('Cold Drink 250ml', 3, 'Chilled Thums Up'),
+          ('સેઝવાન', 3, ''),
+          ('ચીઝ વડા', 2, ''),
+          ('છાશ', 3, ''),
         ],
       ),
       _MockOrderDef(
@@ -267,8 +283,9 @@ class MockDataService {
         tableName: 'Table 4',
         paymentMethod: AppConstants.paymentCard,
         items: [
-          ('Batata Bhajiya Plate', 2, 'Hot & fresh'),
-          ('Ginger Cardamom Full Tea', 2, ''),
+          ('ગાર્લિક માયો', 2, ''),
+          ('મમરી પાંઉ', 2, ''),
+          ('બટર ચટણી', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -276,8 +293,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentCash,
         items: [
-          ('Classic Mumbai Vadapav', 1, ''),
-          ('Special Masala Cutting Chai', 1, ''),
+          ('અમુલ બટર', 1, ''),
+          ('છાશ', 1, ''),
         ],
       ),
 
@@ -287,8 +304,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('2 Vadapav + Masala Chai Combo', 2, ''),
-          ('Single Punjabi Samosa', 2, ''),
+          ('અમુલ ચીઝ તંદુરી (Best Seller)', 2, ''),
+          ('ડબલ બટર મમરી (Best Seller)', 2, ''),
         ],
       ),
       _MockOrderDef(
@@ -301,7 +318,9 @@ class MockDataService {
         deliveryFee: 30.0,
         paymentMethod: 'Swiggy Online',
         items: [
-          ('Family Feast (4 Vadapav + 2 Chai)', 2, 'Extra chutney please'),
+          ('અમુલ ચીઝ ગાર્લિક (Best Seller)', 2, ''),
+          ('ચીઝ મમરી (Best Seller)', 2, ''),
+          ('છાશ', 4, ''),
         ],
       ),
       _MockOrderDef(
@@ -310,9 +329,9 @@ class MockDataService {
         tableName: 'Table 1',
         paymentMethod: AppConstants.paymentCash,
         items: [
-          ('Cheese Burst Vadapav', 1, ''),
-          ('Schezwan Spicy Vadapav', 1, ''),
-          ('Cold Drink 250ml', 1, ''),
+          ('ડબલ બટર ચીઝ', 1, ''),
+          ('તંદુરી માયો', 1, ''),
+          ('છાશ', 1, ''),
         ],
       ),
 
@@ -322,8 +341,8 @@ class MockDataService {
         source: AppConstants.sourceCounter,
         paymentMethod: AppConstants.paymentCash,
         items: [
-          ('Classic Mumbai Vadapav', 5, 'Quick packing'),
-          ('Special Masala Cutting Chai', 5, ''),
+          ('સાદા વડાપાંઉ', 5, ''),
+          ('બટર વડા', 3, ''),
         ],
       ),
       _MockOrderDef(
@@ -332,9 +351,9 @@ class MockDataService {
         customerPhone: '9123456780',
         paymentMethod: AppConstants.paymentUPI,
         items: [
-          ('Kanda Bhaji Plate (Onion Pakoda)', 2, ''),
-          ('Batata Bhajiya Plate', 2, ''),
-          ('Special Masala Cutting Chai', 4, ''),
+          ('ગાર્લિક મમરી', 2, ''),
+          ('તંદુરી મમરી', 2, ''),
+          ('ચીઝ ચટણી', 4, ''),
         ],
       ),
     ];

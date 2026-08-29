@@ -18,16 +18,22 @@ class ReportPdfService {
     required BusinessSetting? business,
     required String dateRangeLabel,
   }) async {
-    // Load NotoSans font for ₹ (Rupee) symbol support
-    final fontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-    final notoSans = pw.Font.ttf(fontData);
+    // Load NotoSans Gujarati and Latin fonts for Gujarati & ₹ (Rupee) symbol support
+    final gujaratiFontData = await rootBundle.load('assets/fonts/NotoSansGujarati-Regular.ttf');
+    final gujaratiBoldData = await rootBundle.load('assets/fonts/NotoSansGujarati-Bold.ttf');
+    final latinFontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+
+    final notoSansGujarati = pw.Font.ttf(gujaratiFontData);
+    final notoSansGujaratiBold = pw.Font.ttf(gujaratiBoldData);
+    final notoSansLatin = pw.Font.ttf(latinFontData);
 
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(
-        base: notoSans,
-        bold: notoSans,
-        italic: notoSans,
-        boldItalic: notoSans,
+        base: notoSansGujarati,
+        bold: notoSansGujaratiBold,
+        italic: notoSansGujarati,
+        boldItalic: notoSansGujaratiBold,
+        fontFallback: [notoSansGujarati, notoSansGujaratiBold, notoSansLatin],
       ),
     );
 

@@ -10,6 +10,7 @@ import '../../providers/printer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/item_image_widget.dart';
@@ -28,7 +29,10 @@ class CreateOrderScreen extends StatefulWidget {
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  int? _selectedCategoryId;
+  // -1 = Best Seller Items (virtual, shows all items with best sellers first)
+  // null = All items (no filter)
+  // positive int = specific category
+  int? _selectedCategoryId = -1;
   bool _isSubmitting = false;
 
   @override
@@ -75,7 +79,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     if (summary != null) {
       final printer = context.read<PrinterProvider>();
-      if (printer.autoPrintOnOrder && printer.isConnected) {
+      // Print immediately to connected thermal printer
+      if (printer.isConnected) {
         printer.printOrderReceipt(
           order: summary.order,
           items: summary.items,
@@ -88,6 +93,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         builder: (_) => InvoicePreviewScreen(
           orderId: summary.order.id,
           invoicePath: summary.order.invoicePath,
+          autoPrint: true,
         ),
       ));
     } else {
@@ -181,7 +187,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               children: [
                 Expanded(
                   flex: 65,
-                  child: _buildItemCatalog(context),
+                  child: Column(
+                    children: [
+                      _buildSearchBar(context),
+                      _buildCategoryFilter(context),
+                      const SizedBox(height: 8),
+                      Expanded(child: _buildItemCatalog(context)),
+                    ],
+                  ),
                 ),
                 const VerticalDivider(width: 1, thickness: 1),
                 Expanded(
@@ -222,69 +235,136 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // ── Search Header ─────────────────────────────────────────────────────────
 
   Widget _buildSearchBar(BuildContext context) {
+    final op = context.watch<OrderProvider>();
+    final isStaff = op.selectedSource == AppConstants.sourceStaff;
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 14),
-            Icon(Icons.search, color: Colors.grey.shade600, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w500,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isStaff ? const Color(0xFF7C3AED).withValues(alpha: 0.5) : const Color(0xFFE5E7EB),
+                  width: isStaff ? 1.5 : 1,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Search products...',
-                  hintStyle: TextStyle(
-                    fontSize: 15,
-                    color: Colors.grey.shade400,
-                    fontWeight: FontWeight.normal,
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 14),
+                  Icon(Icons.search, color: Colors.grey.shade600, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search products...',
+                        hintStyle: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey.shade400,
+                          fontWeight: FontWeight.normal,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                    ),
                   ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onChanged: (v) => setState(() => _searchQuery = v),
+                  if (_searchQuery.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade400,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 14),
+                ],
               ),
             ),
-            if (_searchQuery.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = '');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 14,
-                      color: Colors.white,
+          ),
+          const SizedBox(width: 10),
+          // Staff Mode Toggle Button on Item Selector Screen
+          InkWell(
+            onTap: () {
+              if (isStaff) {
+                op.setOrderSource(AppConstants.sourceCounter);
+                op.setPaymentMethod(AppConstants.paymentCash);
+              } else {
+                op.setOrderSource(AppConstants.sourceStaff);
+                op.setPaymentMethod(AppConstants.paymentStaff);
+              }
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: isStaff ? const Color(0xFF7C3AED) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFE5E7EB),
+                  width: 1.5,
+                ),
+                boxShadow: isStaff
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isStaff ? Icons.badge : Icons.badge_outlined,
+                    color: isStaff ? Colors.white : const Color(0xFF7C3AED),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Staff',
+                    style: TextStyle(
+                      color: isStaff ? Colors.white : const Color(0xFF7C3AED),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
-                ),
-              )
-            else
-              const SizedBox(width: 14),
-          ],
-        ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -302,13 +382,22 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
+          // Best Seller Items - always first, acts as virtual "all with best sellers first"
+          _buildCategoryPill(
+            title: 'Best Seller Items',
+            isSelected: _selectedCategoryId == -1,
+            onTap: () => setState(() => _selectedCategoryId = -1),
+          ),
+          const SizedBox(width: 8),
           _buildCategoryPill(
             title: 'All',
             isSelected: _selectedCategoryId == null,
             onTap: () => setState(() => _selectedCategoryId = null),
           ),
           const SizedBox(width: 8),
-          ...categories.map((cat) {
+          ...categories
+              .where((cat) => cat.name != 'Best Seller Items')
+              .map((cat) {
             final isSel = _selectedCategoryId == cat.id;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -364,7 +453,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     var items = menuProvider.items;
 
-    if (_selectedCategoryId != null) {
+    if (_selectedCategoryId == -1) {
+      // Best Seller Items: show ALL items, but sort best sellers to top
+      items = List<Item>.from(items);
+      items.sort((a, b) {
+        final aIsBest = a.name.contains('Best Seller') ? 0 : 1;
+        final bIsBest = b.name.contains('Best Seller') ? 0 : 1;
+        return aIsBest.compareTo(bIsBest);
+      });
+    } else if (_selectedCategoryId != null) {
       items = items.where((i) => i.categoryId == _selectedCategoryId).toList();
     }
 
@@ -405,16 +502,22 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.74,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-      ),
-      itemCount: items.length,
-      itemBuilder: (ctx, idx) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 500 ? 3 : 2;
+        final childAspectRatio = width >= 500 ? 0.72 : 0.74;
+
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+          ),
+          itemCount: items.length,
+          itemBuilder: (ctx, idx) {
         final item = items[idx];
         final qty = orderProvider.getCartQty(item.id);
         return ProductGridCard(
@@ -450,6 +553,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           },
         );
       },
+        );
+      },
     );
   }
 
@@ -457,19 +562,20 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   Widget _buildFloatingCartBanner(BuildContext context) {
     final op = context.watch<OrderProvider>();
+    final isStaff = op.selectedSource == AppConstants.sourceStaff;
 
     if (op.cartItemCount == 0) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 18,
             spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
@@ -477,7 +583,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
       child: Row(
         children: [
-          // Shopping Cart Icon Container with Badge
+          // Shopping Cart / Staff Icon Container with Badge
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -485,12 +591,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFECE5),
+                  color: isStaff
+                      ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
+                      : const Color(0xFFFFECE5),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Color(0xFFFF4500),
+                child: Icon(
+                  isStaff ? Icons.badge : Icons.shopping_cart_outlined,
+                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
                   size: 22,
                 ),
               ),
@@ -500,8 +608,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 child: Container(
                   width: 18,
                   height: 18,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE53935),
+                  decoration: BoxDecoration(
+                    color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFE53935),
                     shape: BoxShape.circle,
                   ),
                   child: Center(
@@ -518,27 +626,49 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               ),
             ],
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // Items and Total Price Stack
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${op.cartItemCount} items',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+              Row(
+                children: [
+                  Text(
+                    '${op.cartItemCount} items',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  if (isStaff) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'STAFF',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF7C3AED),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 2),
               Text(
                 AppFormatters.currency(op.cartSubtotal),
-                style: const TextStyle(
-                  fontSize: 17,
+                style: TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Colors.black,
+                  color: isStaff ? const Color(0xFF7C3AED) : Colors.black,
                 ),
               ),
             ],
@@ -549,8 +679,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             onTap: () => op.clearCart(),
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 38,
-              height: 38,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(12),
@@ -559,37 +689,67 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               child: const Icon(
                 Icons.close_rounded,
                 color: Colors.black54,
-                size: 20,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // More / Options Button (Discount, Custom breakdown)
+          InkWell(
+            onTap: () => _openCheckoutSheet(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: const Icon(
+                Icons.tune_rounded,
+                color: Colors.black54,
+                size: 18,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // View Cart Orange Button
+          // Direct 1-Tap Checkout & Print Button
           ElevatedButton(
-            onPressed: () => _openCheckoutSheet(context),
+            onPressed: _isSubmitting ? null : _submitOrder,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF4500),
+              backgroundColor: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'View Cart',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isStaff ? Icons.check_circle_outline : Icons.print_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isStaff ? 'Save Staff' : 'Print Bill',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(width: 6),
-                Icon(Icons.arrow_forward, size: 16, color: Colors.white),
-              ],
-            ),
           ),
         ],
       ),
@@ -601,6 +761,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget _buildTabletCartPanel(BuildContext context) {
     final theme = Theme.of(context);
     final op = context.watch<OrderProvider>();
+    final isStaff = op.selectedSource == AppConstants.sourceStaff;
 
     return Container(
       color: theme.colorScheme.surface,
@@ -609,15 +770,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            color: const Color(0xFFFF4500).withOpacity(0.08),
+            color: (isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500)).withValues(alpha: 0.08),
             child: Row(
               children: [
-                const Icon(Icons.shopping_cart, color: Color(0xFFFF4500)),
+                Icon(
+                  isStaff ? Icons.badge : Icons.shopping_cart,
+                  color: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Current Order',
+                  isStaff ? 'Staff Order' : 'Current Order',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: isStaff ? const Color(0xFF7C3AED) : null,
                   ),
                 ),
                 const Spacer(),
@@ -630,6 +795,46 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     ),
                   ),
               ],
+            ),
+          ),
+          // Order Type Selector on Tablet Panel
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: <String>[
+                  AppConstants.sourceCounter,
+                  AppConstants.sourceDineIn,
+                  AppConstants.sourceTakeaway,
+                  AppConstants.sourceDelivery,
+                  AppConstants.sourceStaff,
+                ].map((String source) {
+                  final isSel = op.selectedSource == source;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(source, style: const TextStyle(fontSize: 12)),
+                      selected: isSel,
+                      selectedColor: source == AppConstants.sourceStaff
+                          ? const Color(0xFF7C3AED)
+                          : AppColors.primary,
+                      labelStyle: TextStyle(
+                        color: isSel ? Colors.white : Colors.black87,
+                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (_) {
+                        op.setOrderSource(source);
+                        if (source == AppConstants.sourceStaff) {
+                          op.setPaymentMethod(AppConstants.paymentStaff);
+                        } else {
+                          op.setPaymentMethod(AppConstants.paymentCash);
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           Expanded(
@@ -712,22 +917,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: op.cartItems.isEmpty || _isSubmitting
-                        ? null
-                        : () => _openCheckoutSheet(context),
+                    onPressed: op.cartItems.isEmpty || _isSubmitting ? null : _submitOrder,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: const Color(0xFFFF4500),
+                      backgroundColor: isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
                     ),
                     child: _isSubmitting
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Proceed to Checkout →',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isStaff ? Icons.check_circle_outline : Icons.print_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isStaff ? 'Save Staff Order' : 'Print & Save Bill →',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
                   ),
                 ),

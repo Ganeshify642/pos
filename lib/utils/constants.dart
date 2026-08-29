@@ -1,6 +1,6 @@
 class AppConstants {
   // App Title
-  static const String appName = 'Gopal Vadapav POS';
+  static const String appName = 'Gopal Vadapav';
   static const String currency = '₹';
 
   // Order Sources

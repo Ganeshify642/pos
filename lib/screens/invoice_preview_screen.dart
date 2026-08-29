@@ -16,11 +16,13 @@ import 'order_details_screen.dart';
 class InvoicePreviewScreen extends StatefulWidget {
   final int orderId;
   final String? invoicePath;
+  final bool autoPrint;
 
   const InvoicePreviewScreen({
     super.key,
     required this.orderId,
     this.invoicePath,
+    this.autoPrint = true,
   });
 
   @override
@@ -30,6 +32,19 @@ class InvoicePreviewScreen extends StatefulWidget {
 class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
   bool _sharing = false;
   bool _isPrintingThermal = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoPrint) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final printer = context.read<PrinterProvider>();
+        if (printer.isConnected) {
+          _printThermal();
+        }
+      });
+    }
+  }
 
   Future<void> _shareInvoice() async {
     if (widget.invoicePath == null) return;

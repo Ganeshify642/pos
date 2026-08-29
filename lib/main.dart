@@ -85,7 +85,7 @@ class DeliveryBillApp extends StatelessWidget {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
           return MaterialApp(
-            title: 'DeliveryBill',
+            title: 'Gopal Vadapav',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
