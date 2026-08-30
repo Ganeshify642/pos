@@ -39,31 +39,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.fastfood_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Expanded(child: Text('Load Vadapav Shop Data?')),
-          ],
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Load Demo Menu?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         content: const Text(
-          'This will populate:\n\n'
-          '• 18+ Vadapav shop menu items (Classic, Cheese, Samosa Pav, Bhajiya, Chai & Combos)\n'
-          '• 5 Categories (Vadapav Specials, Samosa & Puffs, Snacks, Beverages, Combos)\n'
-          '• Daily stock & preparation inventory\n'
-          '• 13+ sample orders with PDF invoices (Counter, Dine-In, Takeaway, Swiggy, Zomato)\n\n'
-          'Existing items and orders will be replaced with fresh mock data.',
+          'This will populate sample menu items and categories for your shop. Existing items will be refreshed.',
+          style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
-          ElevatedButton.icon(
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            icon: const Icon(Icons.fastfood, size: 16),
-            label: const Text('Load Demo Data'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Load Data'),
           ),
         ],
       ),
@@ -93,8 +86,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Vadapav Shop Mock Data loaded successfully!'),
+            content: Text('Demo menu loaded successfully'),
             backgroundColor: AppColors.inStock,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -104,6 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(
             content: Text('Failed to load mock data: $e'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -116,19 +111,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear All Data?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Clear All Data?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         content: const Text(
-          'Are you sure you want to delete all menu items, inventory, and order history? This cannot be undone.',
+          'Delete all menu items, stock inventory, and orders? This action cannot be undone.',
+          style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete All'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Clear Everything'),
           ),
         ],
       ),
@@ -149,7 +149,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await context.read<ReportProvider>().loadReport();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All data cleared successfully.')),
+          const SnackBar(
+            content: Text('All data cleared'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
@@ -158,6 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(
             content: Text('Failed to clear data: $e'),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -194,592 +198,534 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  InputDecoration _minimalInputDecoration(String label, {String? suffix}) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+      suffixText: suffix,
+      suffixStyle: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+      isDense: true,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text(
+          'Settings',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+        ),
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         children: [
-          // ── Business Info ──────────────────────────────────────────
-          _SectionHeader('Business Information'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Business Name',
-                      prefixIcon: Icon(Icons.store_outlined),
+          // ── BUSINESS INFO ──────────────────────────────────────────
+          _sectionLabel('STORE INFORMATION'),
+          _GroupedCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: _minimalInputDecoration('Store / Business Name'),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      prefixIcon: Icon(Icons.phone_outlined),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _phoneController,
+                      decoration: _minimalInputDecoration('Phone Number'),
+                      keyboardType: TextInputType.phone,
                     ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _addressController,
+                      decoration: _minimalInputDecoration('Address'),
+                      maxLines: 2,
                     ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _gstController,
-                    decoration: const InputDecoration(
-                      labelText: 'GSTIN',
-                      prefixIcon: Icon(Icons.receipt_outlined),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _gstController,
+                      decoration: _minimalInputDecoration('GSTIN (Optional)'),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await settings.saveBusinessSettings(
-                          businessName: _nameController.text,
-                          phone: _phoneController.text,
-                          address: _addressController.text,
-                          gstId: _gstController.text,
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Business settings saved')),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () async {
+                          await settings.saveBusinessSettings(
+                            businessName: _nameController.text,
+                            phone: _phoneController.text,
+                            address: _addressController.text,
+                            gstId: _gstController.text,
                           );
-                        }
-                      },
-                      child: const Text('Save Business Info'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Order Modes ────────────────────────────────────────────
-          _SectionHeader('Order Modes'),
-          Card(
-            child: SwitchListTile(
-              value: settings.orderModesEnabled,
-              onChanged: (v) => settings.setOrderModesEnabled(v),
-              title: const Text('Enable Dine-In / Takeaway / Delivery'),
-              subtitle: const Text(
-                  'When off, all orders are Counter orders. Turn on to choose Dine-In, Takeaway or Delivery at checkout.'),
-              activeColor: AppColors.primary,
-              secondary: Icon(
-                settings.orderModesEnabled
-                    ? Icons.restaurant_menu_rounded
-                    : Icons.point_of_sale_rounded,
-                color: settings.orderModesEnabled
-                    ? AppColors.primary
-                    : AppColors.textMuted,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Tax Settings ───────────────────────────────────────────
-          _SectionHeader('Tax Configuration'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Tax mode toggle
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text('Tax Mode',
-                            style: theme.textTheme.titleSmall),
-                      ),
-                      SegmentedButton<String>(
-                        selected: {settings.taxMode},
-                        onSelectionChanged: (v) {
-                          settings.saveTaxSettings(
-                            sgstPct: double.tryParse(_sgstController.text) ??
-                                AppConstants.defaultSgstPct,
-                            cgstPct: double.tryParse(_cgstController.text) ??
-                                AppConstants.defaultCgstPct,
-                            igstPct: double.tryParse(_igstController.text) ??
-                                AppConstants.defaultIgstPct,
-                            taxMode: v.first,
-                            taxEnabled: settings.taxEnabled,
-                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Store information saved'),
+                                backgroundColor: AppColors.inStock,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
                         },
-                        segments: const [
-                          ButtonSegment(
-                              value: 'SGST+CGST', label: Text('SGST+CGST')),
-                          ButtonSegment(
-                              value: 'IGST', label: Text('IGST')),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (settings.taxMode == AppConstants.taxModeSplit) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _sgstController,
-                            decoration: const InputDecoration(
-                              labelText: 'SGST %',
-                              suffix: Text('%'),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            controller: _cgstController,
-                            decoration: const InputDecoration(
-                              labelText: 'CGST %',
-                              suffix: Text('%'),
-                            ),
-                            keyboardType: TextInputType.number,
+                        child: const Text('Save Store Info', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── ORDER MODES ────────────────────────────────────────────
+          _sectionLabel('ORDER MODES'),
+          _GroupedCard(
+            children: [
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                value: settings.orderModesEnabled,
+                onChanged: (v) => settings.setOrderModesEnabled(v),
+                activeTrackColor: AppColors.primary,
+                title: const Text(
+                  'Multi-mode Fulfillment',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                ),
+                subtitle: const Text(
+                  'Enable Dine-In, Takeaway, and Delivery at checkout',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── TAX SETTINGS ───────────────────────────────────────────
+          _sectionLabel('TAX CONFIGURATION'),
+          _GroupedCard(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Tax Type',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                        ),
+                        SegmentedButton<String>(
+                          style: SegmentedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            selectedBackgroundColor: const Color(0xFFFFF0ED),
+                            selectedForegroundColor: AppColors.primary,
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
                           ),
+                          selected: {settings.taxMode},
+                          onSelectionChanged: (v) {
+                            settings.saveTaxSettings(
+                              sgstPct: double.tryParse(_sgstController.text) ?? AppConstants.defaultSgstPct,
+                              cgstPct: double.tryParse(_cgstController.text) ?? AppConstants.defaultCgstPct,
+                              igstPct: double.tryParse(_igstController.text) ?? AppConstants.defaultIgstPct,
+                              taxMode: v.first,
+                              taxEnabled: settings.taxEnabled,
+                            );
+                          },
+                          segments: const [
+                            ButtonSegment(
+                              value: 'SGST+CGST',
+                              label: Text('SGST+CGST', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            ),
+                            ButtonSegment(
+                              value: 'IGST',
+                              label: Text('IGST', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ] else ...[
-                    TextField(
-                      controller: _igstController,
-                      decoration: const InputDecoration(
-                        labelText: 'IGST %',
-                        suffix: Text('%'),
+                    const SizedBox(height: 12),
+                    if (settings.taxMode == AppConstants.taxModeSplit) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _sgstController,
+                              decoration: _minimalInputDecoration('SGST Rate', suffix: '%'),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: _cgstController,
+                              decoration: _minimalInputDecoration('CGST Rate', suffix: '%'),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
                       ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text('Enable Tax', style: theme.textTheme.titleSmall),
-                      const Spacer(),
-                      Switch.adaptive(
-                        value: settings.taxEnabled,
-                        onChanged: (v) => settings.saveTaxSettings(
-                          sgstPct: double.tryParse(_sgstController.text) ??
-                              AppConstants.defaultSgstPct,
-                          cgstPct: double.tryParse(_cgstController.text) ??
-                              AppConstants.defaultCgstPct,
-                          igstPct: double.tryParse(_igstController.text) ??
-                              AppConstants.defaultIgstPct,
-                          taxMode: settings.taxMode,
-                          taxEnabled: v,
-                        ),
-                        activeColor: AppColors.accent,
+                    ] else ...[
+                      TextField(
+                        controller: _igstController,
+                        decoration: _minimalInputDecoration('IGST Rate', suffix: '%'),
+                        keyboardType: TextInputType.number,
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        await settings.saveTaxSettings(
-                          sgstPct: double.tryParse(_sgstController.text) ??
-                              AppConstants.defaultSgstPct,
-                          cgstPct: double.tryParse(_cgstController.text) ??
-                              AppConstants.defaultCgstPct,
-                          igstPct: double.tryParse(_igstController.text) ??
-                              AppConstants.defaultIgstPct,
-                          taxMode: settings.taxMode,
-                          taxEnabled: settings.taxEnabled,
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Tax settings saved')),
-                          );
-                        }
-                      },
-                      child: const Text('Save Tax Settings'),
+                    const SizedBox(height: 10),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: settings.taxEnabled,
+                      onChanged: (v) => settings.saveTaxSettings(
+                        sgstPct: double.tryParse(_sgstController.text) ?? AppConstants.defaultSgstPct,
+                        cgstPct: double.tryParse(_cgstController.text) ?? AppConstants.defaultCgstPct,
+                        igstPct: double.tryParse(_igstController.text) ?? AppConstants.defaultIgstPct,
+                        taxMode: settings.taxMode,
+                        taxEnabled: v,
+                      ),
+                      activeTrackColor: AppColors.primary,
+                      title: const Text(
+                        'Apply Tax on Checkout',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await settings.saveTaxSettings(
+                            sgstPct: double.tryParse(_sgstController.text) ?? AppConstants.defaultSgstPct,
+                            cgstPct: double.tryParse(_cgstController.text) ?? AppConstants.defaultCgstPct,
+                            igstPct: double.tryParse(_igstController.text) ?? AppConstants.defaultIgstPct,
+                            taxMode: settings.taxMode,
+                            taxEnabled: settings.taxEnabled,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tax rates updated'),
+                                backgroundColor: AppColors.inStock,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0F172A),
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        child: const Text('Save Tax Rates', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // ── Thermal Printer (Bluetooth) ─────────────────────────────
-          _SectionHeader('Bluetooth Thermal Printer'),
+          // ── THERMAL PRINTER ────────────────────────────────────────
+          _sectionLabel('THERMAL PRINTER'),
           Consumer<PrinterProvider>(
             builder: (context, printer, _) {
               final isConnected = printer.isConnected;
               final isBtOn = printer.isBluetoothEnabled;
 
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Status Banner
-                      Row(
+              return _GroupedCard(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: !isBtOn
+                                ? Colors.red
+                                : isConnected
+                                    ? AppColors.inStock
+                                    : Colors.amber.shade700,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                !isBtOn
+                                    ? 'Bluetooth Disabled'
+                                    : isConnected
+                                        ? (printer.connectedPrinter?.name ?? 'Connected Printer')
+                                        : 'No Printer Connected',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                              ),
+                              Text(
+                                !isBtOn
+                                    ? 'Turn on Bluetooth'
+                                    : isConnected
+                                        ? 'Ready for receipts'
+                                        : 'Tap to connect printer',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => PrinterDialog.show(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: Text(isConnected ? 'Manage' : 'Connect', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isConnected) ...[
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: !isBtOn
-                                  ? Colors.red.withValues(alpha: 0.12)
-                                  : isConnected
-                                      ? AppColors.inStock.withValues(alpha: 0.12)
-                                      : Colors.amber.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              !isBtOn
-                                  ? Icons.bluetooth_disabled
-                                  : isConnected
-                                      ? Icons.check_circle_outline
-                                      : Icons.print_disabled_outlined,
-                              color: !isBtOn
-                                  ? Colors.red
-                                  : isConnected
-                                      ? AppColors.inStock
-                                      : Colors.amber.shade800,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  !isBtOn
-                                      ? 'Bluetooth Disabled'
-                                      : isConnected
-                                          ? (printer.connectedPrinter?.name ??
-                                              'Thermal Printer')
-                                          : 'No Printer Connected',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                Text(
-                                  !isBtOn
-                                      ? 'Turn ON Bluetooth to connect printer'
-                                      : isConnected
-                                          ? 'Ready for receipt printing'
-                                          : 'Connect your ESC/POS thermal printer',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ],
+                            child: OutlinedButton.icon(
+                              onPressed: printer.isPrinting
+                                  ? null
+                                  : () async {
+                                      if (settings.businessSettings != null) {
+                                        final ok = await printer.printTestReceipt(
+                                          business: settings.businessSettings!,
+                                        );
+                                        if (context.mounted && ok) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Test receipt printed'),
+                                              backgroundColor: AppColors.inStock,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF0F172A),
+                                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              icon: printer.isPrinting
+                                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Icon(Icons.receipt_outlined, size: 15),
+                              label: Text(
+                                printer.isPrinting ? 'Printing...' : 'Test Print',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
                             ),
                           ),
-                          ElevatedButton(
-                            onPressed: () => PrinterDialog.show(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isConnected
-                                  ? theme.colorScheme.surfaceContainerHighest
-                                  : AppColors.primary,
-                              foregroundColor: isConnected
-                                  ? theme.colorScheme.onSurface
-                                  : Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () => printer.disconnect(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red.shade600,
+                              visualDensity: VisualDensity.compact,
                             ),
-                            child: Text(isConnected ? 'Manage' : 'Connect'),
+                            child: const Text('Disconnect', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                           ),
                         ],
                       ),
-
-                      if (isConnected) ...[
-                        const Divider(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: printer.isPrinting
-                                    ? null
-                                    : () async {
-                                        if (settings.businessSettings != null) {
-                                          final ok = await printer
-                                              .printTestReceipt(
-                                            business:
-                                                settings.businessSettings!,
-                                          );
-                                          if (context.mounted && ok) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    'Test receipt printed successfully!'),
-                                                backgroundColor:
-                                                    AppColors.inStock,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
-                                icon: printer.isPrinting
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.receipt_long, size: 16),
-                                label: Text(printer.isPrinting
-                                    ? 'Printing...'
-                                    : 'Print Test Receipt'),
-                              ),
+                    ),
+                  ],
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Paper Size',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                        ),
+                        SegmentedButton<String>(
+                          style: SegmentedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            selectedBackgroundColor: const Color(0xFFFFF0ED),
+                            selectedForegroundColor: AppColors.primary,
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          selected: {printer.paperSize},
+                          onSelectionChanged: (set) => printer.setPaperSize(set.first),
+                          segments: const [
+                            ButtonSegment(
+                              value: '58mm',
+                              label: Text('58mm', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                             ),
-                            const SizedBox(width: 8),
-                            OutlinedButton(
-                              onPressed: () => printer.disconnect(),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                              ),
-                              child: const Text('Disconnect'),
+                            ButtonSegment(
+                              value: '80mm',
+                              label: Text('80mm', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                             ),
                           ],
                         ),
                       ],
-
-                      const Divider(height: 24),
-
-                      // Paper Size Selection
-                      Row(
-                        children: [
-                          Text('Paper Size',
-                              style: theme.textTheme.titleSmall),
-                          const Spacer(),
-                          SegmentedButton<String>(
-                            selected: {printer.paperSize},
-                            onSelectionChanged: (set) =>
-                                printer.setPaperSize(set.first),
-                            segments: const [
-                              ButtonSegment(
-                                value: '58mm',
-                                label: Text('58mm (Small)'),
-                              ),
-                              ButtonSegment(
-                                value: '80mm',
-                                label: Text('80mm'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Auto-print switch
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Auto-print New Orders',
-                            style: TextStyle(fontSize: 14)),
-                        subtitle: const Text(
-                          'Automatically print receipt when order checkout completes',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        value: printer.autoPrintOnOrder,
-                        onChanged: (v) => printer.setAutoPrintOnOrder(v),
-                        activeTrackColor: AppColors.primary,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  SwitchListTile.adaptive(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    value: printer.autoPrintOnOrder,
+                    onChanged: (v) => printer.setAutoPrintOnOrder(v),
+                    activeTrackColor: AppColors.primary,
+                    title: const Text(
+                      'Auto-print on checkout',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                    ),
+                  ),
+                ],
               );
             },
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // ── Appearance ────────────────────────────────────────────
-          _SectionHeader('Appearance'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Text('Dark Mode', style: theme.textTheme.titleSmall),
-                  const Spacer(),
-                  Switch.adaptive(
-                    value: settings.themeMode == ThemeMode.dark,
-                    onChanged: (v) => settings.setThemeMode(
-                        v ? ThemeMode.dark : ThemeMode.light),
-                    activeColor: AppColors.primary,
-                  ),
-                ],
+          // ── DATA MANAGEMENT ────────────────────────────────────────
+          _sectionLabel('DATA MANAGEMENT'),
+          _GroupedCard(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                title: const Text('Load Demo Menu Items', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                subtitle: const Text('Populate demo categories and items', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                trailing: _loadingMockData
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : TextButton(
+                        onPressed: _loadingMockData ? null : _handleLoadMockData,
+                        style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                        child: const Text('Load', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
               ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Testing & Demo Data ─────────────────────────────────────
-          _SectionHeader('Testing & Demo Data'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.fastfood_rounded,
-                            color: AppColors.primary, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Vadapav Shop Mock Data',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            Text(
-                              'Populate realistic items, stock & orders for testing',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Loads 18+ menu items (Classic Vadapav, Cheese Burst, Samosa Pav, Bhajiya, Masala Chai & Combos), 5 categories, daily stock inventory, and 13+ sample orders with PDF invoices for quick billing, reporting & thermal printer testing.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              _loadingMockData ? null : _handleLoadMockData,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          icon: _loadingMockData
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.download_rounded, size: 18),
-                          label: Text(_loadingMockData
-                              ? 'Loading Data...'
-                              : 'Load Vadapav Mock Data'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      OutlinedButton(
-                        onPressed:
-                            _loadingMockData ? null : _handleClearAllData,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                        ),
-                        child: const Text('Clear All'),
-                      ),
-                    ],
-                  ),
-                ],
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                title: Text('Clear All Data', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                subtitle: const Text('Delete all products, stock & orders', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                trailing: TextButton(
+                  onPressed: _loadingMockData ? null : _handleClearAllData,
+                  style: TextButton.styleFrom(foregroundColor: Colors.red.shade600),
+                  child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
               ),
-            ),
+            ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // ── About ──────────────────────────────────────────────────
-          _SectionHeader('About'),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('App Version'),
-                  trailing: const Text('1.0.0'),
+          // ── ABOUT ──────────────────────────────────────────────────
+          _sectionLabel('ABOUT'),
+          _GroupedCard(
+            children: [
+              const ListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                title: Text('Version', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A))),
+                trailing: Text('1.0.0', style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+              ),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                title: const Text('Developed By', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF0F172A))),
+                trailing: Text(
+                  'DevamJyot Infotech & Ganeshify',
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.w500),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.wifi_off, color: AppColors.accent),
-                  title: const Text('Offline Mode'),
-                  subtitle: const Text('100% offline — no internet required'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 30),
+
+          const SizedBox(height: 32),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF94A3B8),
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader(this.title);
+class _GroupedCard extends StatelessWidget {
+  final List<Widget> children;
+
+  const _GroupedCard({required this.children});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-          letterSpacing: 1,
-        ),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
   }
@@ -814,82 +760,66 @@ class _DeliveryAppCardState extends State<_DeliveryAppCard> {
 
   @override
   Widget build(BuildContext context) {
-    final (color, _) = _appStyle(widget.app.appName);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.app.appName,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commissionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Commission %',
+                    isDense: true,
+                    suffix: Text('%'),
                   ),
-                  child: Text(
-                    widget.app.appName,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _feeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Fee ₹',
+                    isDense: true,
+                    prefix: Text('₹'),
                   ),
+                  keyboardType: TextInputType.number,
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commissionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Commission %',
-                      isDense: true,
-                      suffix: Text('%'),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _feeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Fixed Fee ₹',
-                      isDense: true,
-                      prefix: Text('₹'),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () {
-                    context.read<SettingsProvider>().saveDeliveryAppSettings(
-                          widget.app.appName,
-                          double.tryParse(_commissionController.text) ??
-                              AppConstants.defaultCommissionPct,
-                          double.tryParse(_feeController.text) ?? 0,
-                        );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Saved')),
-                    );
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () {
+                  context.read<SettingsProvider>().saveDeliveryAppSettings(
+                        widget.app.appName,
+                        double.tryParse(_commissionController.text) ??
+                            AppConstants.defaultCommissionPct,
+                        double.tryParse(_feeController.text) ?? 0,
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Saved'), behavior: SnackBarBehavior.floating),
+                  );
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
-  }
-
-  (Color, String) _appStyle(String name) {
-    return (AppColors.primary, name);
   }
 }

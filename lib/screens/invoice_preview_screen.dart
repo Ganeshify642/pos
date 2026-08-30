@@ -135,8 +135,19 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
     final printer = context.watch<PrinterProvider>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Invoice Generated'),
+        title: Text(
+          'Invoice #${widget.orderId}',
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -144,7 +155,8 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
               printer.isConnected
                   ? Icons.print_rounded
                   : Icons.print_outlined,
-              color: printer.isConnected ? AppColors.inStock : null,
+              size: 20,
+              color: printer.isConnected ? AppColors.inStock : const Color(0xFF64748B),
             ),
             tooltip: printer.isConnected
                 ? 'Printer Connected (${printer.connectedPrinter?.name ?? "Thermal Printer"})'
@@ -153,112 +165,61 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
           ),
           if (path != null)
             IconButton(
-              icon: const Icon(Icons.share_outlined),
+              icon: _sharing
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.share_outlined, size: 20, color: Color(0xFF64748B)),
               onPressed: _sharing ? null : _shareInvoice,
               tooltip: 'Share Invoice',
             ),
-          TextButton(
-            onPressed: _goHome,
-            child: const Text('Done'),
+          IconButton(
+            icon: const Icon(Icons.visibility_outlined, size: 20, color: Color(0xFF64748B)),
+            tooltip: 'View Order Details',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => OrderDetailsScreen(orderId: widget.orderId)),
+            ),
           ),
+          const SizedBox(width: 6),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+        ),
       ),
       body: Column(
         children: [
-          // Success banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: AppColors.accent.withValues(alpha: 0.1),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    color: AppColors.accent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Order Created Successfully!',
-                        style: TextStyle(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      if (path != null)
-                        Text(
-                          'Invoice saved to device',
-                          style: TextStyle(
-                            color: AppColors.accent.withValues(alpha: 0.7),
-                            fontSize: 12,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Quick Thermal Printer Bar
+          // Minimalist Banner (Printer status + Order success)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: printer.isConnected
-                  ? AppColors.inStock.withValues(alpha: 0.08)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-              border: Border(
-                bottom: BorderSide(
-                  color: printer.isConnected
-                      ? AppColors.inStock.withValues(alpha: 0.2)
-                      : theme.dividerColor,
-                ),
-              ),
-            ),
+            color: printer.isConnected ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
             child: Row(
               children: [
                 Icon(
-                  printer.isConnected
-                      ? Icons.bluetooth_connected
-                      : Icons.bluetooth_searching,
+                  printer.isConnected ? Icons.check_circle_outline_rounded : Icons.bluetooth_searching,
                   size: 16,
-                  color: printer.isConnected
-                      ? AppColors.inStock
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: printer.isConnected ? AppColors.inStock : const Color(0xFFB45309),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     printer.isConnected
-                        ? 'Connected: ${printer.connectedPrinter?.name ?? "Thermal Printer"}'
-                        : 'Thermal Printer not connected',
+                        ? 'Ready: ${printer.connectedPrinter?.name ?? "Thermal Printer"}'
+                        : 'Thermal printer not connected',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: printer.isConnected
-                          ? AppColors.inStock
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: printer.isConnected ? const Color(0xFF065F46) : const Color(0xFF92400E),
                     ),
                   ),
                 ),
                 InkWell(
                   onTap: () => PrinterDialog.show(context),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     child: Text(
                       printer.isConnected ? 'Change' : 'Connect',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),
                     ),
@@ -268,112 +229,112 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
             ),
           ),
 
-          // PDF Preview
+          // PDF Preview Area (Cleaned: removed bottom orange toolbar overlap)
           Expanded(
             child: path != null
-                ? PdfPreview(
-                    build: (_) => File(path).readAsBytes(),
-                    allowPrinting: true,
-                    allowSharing: false,
-                    canChangePageFormat: false,
-                    canDebug: false,
-                    pdfFileName: 'Invoice_${widget.orderId}.pdf',
+                ? Container(
+                    margin: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: PdfPreview(
+                      build: (_) => File(path).readAsBytes(),
+                      allowPrinting: false,
+                      allowSharing: false,
+                      canChangePageFormat: false,
+                      canDebug: false,
+                      canChangeOrientation: false,
+                      pdfFileName: 'Invoice_${widget.orderId}.pdf',
+                      loadingWidget: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
                   )
                 : Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long_outlined,
-                            size: 64,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
-                        const SizedBox(height: 16),
-                        Text(
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 56,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
                           'Invoice could not be generated',
-                          style: theme.textTheme.bodyLarge,
+                          style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
                         ),
                       ],
                     ),
                   ),
           ),
 
-          // Bottom action bar
+          // Minimalist Bottom Bar: Done & Print buttons side-by-side
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.scaffoldBackgroundColor,
-              border: Border(top: BorderSide(color: theme.dividerColor)),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Primary Thermal Print Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isPrintingThermal ? null : _printThermal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    icon: _isPrintingThermal
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.print_rounded, size: 20),
-                    label: Text(
-                      _isPrintingThermal
-                          ? 'Printing Thermal Receipt...'
-                          : printer.isConnected
-                              ? 'Print Thermal Receipt (${printer.paperSize})'
-                              : 'Connect & Print Thermal Receipt',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  // Done button
+                  Expanded(
+                    flex: 4,
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _goHome,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF0F172A),
+                          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                        label: const Text(
+                          'Done',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => OrderDetailsScreen(
-                                    orderId: widget.orderId))),
-                        icon: const Icon(Icons.visibility_outlined, size: 18),
-                        label: const Text('View Order'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _sharing ? null : _shareInvoice,
-                        icon: const Icon(Icons.share_outlined, size: 18),
-                        label: _sharing
+                  const SizedBox(width: 10),
+                  // Print Thermal Receipt button
+                  Expanded(
+                    flex: 6,
+                    child: SizedBox(
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: _isPrintingThermal ? null : _printThermal,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: _isPrintingThermal
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ))
-                            : const Text('Share PDF'),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.print_rounded, size: 18),
+                        label: Text(
+                          _isPrintingThermal
+                              ? 'Printing...'
+                              : printer.isConnected
+                                  ? 'Print Receipt (${printer.paperSize})'
+                                  : 'Print Receipt',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
