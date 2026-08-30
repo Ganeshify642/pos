@@ -42,29 +42,37 @@ class PrinterService {
     }
   }
 
-  /// Request Bluetooth and Location permissions
+  /// Request Bluetooth, Nearby Devices, and Location permissions
   Future<bool> requestPermissions() async {
     if (kIsWeb) return false;
 
-    if (Platform.isAndroid) {
-      Map<Permission, PermissionStatus> statuses = await [
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.locationWhenInUse,
-      ].request();
+    try {
+      if (Platform.isAndroid) {
+        // Request Bluetooth permissions for Android 12+ (Nearby Devices) & Android <=11
+        final statuses = await [
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.bluetoothAdvertise,
+          Permission.bluetooth,
+          Permission.locationWhenInUse,
+        ].request();
 
-      final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
-      final connectGranted =
-          statuses[Permission.bluetoothConnect]?.isGranted ?? false;
-      final locationGranted =
-          statuses[Permission.locationWhenInUse]?.isGranted ?? false;
+        final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
+        final connectGranted =
+            statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+        final locationGranted =
+            statuses[Permission.locationWhenInUse]?.isGranted ?? false;
+        final btGranted = statuses[Permission.bluetooth]?.isGranted ?? false;
 
-      return (scanGranted && connectGranted) || locationGranted;
-    }
+        return (scanGranted && connectGranted) || locationGranted || btGranted;
+      }
 
-    if (Platform.isIOS) {
-      final status = await Permission.bluetooth.request();
-      return status.isGranted;
+      if (Platform.isIOS) {
+        final status = await Permission.bluetooth.request();
+        return status.isGranted;
+      }
+    } catch (e) {
+      debugPrint('Permission request error: $e');
     }
 
     return true;

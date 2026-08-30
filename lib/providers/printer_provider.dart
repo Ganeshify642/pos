@@ -147,23 +147,33 @@ class PrinterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Explicitly requests bluetooth permissions and initializes printer discovery
+  Future<void> requestPermissionsAndInit() async {
+    await _printerService.requestPermissions();
+    await checkBluetoothState();
+    await refreshPairedDevices();
+    if (_savedPrinterMac != null && _isBluetoothEnabled) {
+      _autoReconnect();
+    }
+  }
+
   /// Scan for nearby Bluetooth printers
   Future<void> startScan() async {
     _errorMessage = null;
     _statusMessage = null;
 
-    final isBtOn = await _printerService.isBluetoothEnabled();
-    _isBluetoothEnabled = isBtOn;
-    if (!isBtOn) {
-      _errorMessage = 'Bluetooth is turned off. Please turn ON Bluetooth.';
+    final hasPerms = await _printerService.requestPermissions();
+    if (!hasPerms) {
+      _errorMessage =
+          'Nearby Devices / Bluetooth permissions are required to scan for printers.';
       notifyListeners();
       return;
     }
 
-    final hasPerms = await _printerService.requestPermissions();
-    if (!hasPerms) {
-      _errorMessage =
-          'Bluetooth permissions are required to scan for printers.';
+    final isBtOn = await _printerService.isBluetoothEnabled();
+    _isBluetoothEnabled = isBtOn;
+    if (!isBtOn) {
+      _errorMessage = 'Bluetooth is turned off. Please turn ON Bluetooth.';
       notifyListeners();
       return;
     }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
 import '../providers/menu_provider.dart';
+import '../providers/printer_provider.dart';
 import '../utils/app_colors.dart';
 import 'home_screen.dart';
 
@@ -74,13 +75,18 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    // Load settings and menu
+    // Load settings, menu, and initialize printer permissions
     final settings = context.read<SettingsProvider>();
     final menu = context.read<MenuProvider>();
-    await settings.loadSettings();
-    await menu.loadAll();
+    final printer = context.read<PrinterProvider>();
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    await Future.wait([
+      settings.loadSettings(),
+      menu.loadAll(),
+      printer.requestPermissionsAndInit(),
+    ]);
+
+    await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
