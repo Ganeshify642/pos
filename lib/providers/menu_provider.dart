@@ -106,4 +106,14 @@ class MenuProvider extends ChangeNotifier {
   Future<List<Item>> searchItems(String query) async {
     return await _repo.searchItems(query);
   }
+
+  /// Items marked as best sellers
+  List<Item> get bestSellerItems =>
+      _items.where((Item i) => i.isBestSeller).toList();
+
+  /// Toggle best seller status for an item
+  Future<void> toggleBestSeller(int id, bool isBestSeller) async {
+    await _repo.toggleBestSeller(id, isBestSeller);
+    await loadAll();
+  }
 }

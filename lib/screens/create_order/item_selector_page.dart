@@ -37,7 +37,7 @@ class _ItemSelectorPageState extends State<ItemSelectorPage>
     super.initState();
     final menuProvider = context.read<MenuProvider>();
     _tabController = TabController(
-      length: menuProvider.categories.length + 1,
+      length: menuProvider.categories.length + 2, // All + Best Sellers + categories
       vsync: this,
     );
     _loadStockInfo();
@@ -143,6 +143,16 @@ class _ItemSelectorPageState extends State<ItemSelectorPage>
                             indicatorColor: AppColors.primary,
                             tabs: [
                               const Tab(text: 'All'),
+                              const Tab(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                                    SizedBox(width: 4),
+                                    Text('Best Sellers'),
+                                  ],
+                                ),
+                              ),
                                ...categories
                                   .map((Category c) => Tab(text: c.name))
                             ],
@@ -171,6 +181,9 @@ class _ItemSelectorPageState extends State<ItemSelectorPage>
                     // "All" tab
                     _buildItemList(
                         menuProvider.items, orderProvider, theme),
+                    // "Best Sellers" tab
+                    _buildItemList(
+                        menuProvider.bestSellerItems, orderProvider, theme),
                     // Category tabs
                     ...categories.map((Category cat) => _buildItemList(
                         menuProvider.itemsByCategory(cat.id),
@@ -262,13 +275,28 @@ class _ItemTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          item.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: isOutOfStock
-                                ? theme.colorScheme.onSurface.withOpacity(0.3)
-                                : null,
-                          ),
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                item.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: isOutOfStock
+                                      ? theme.colorScheme.onSurface.withOpacity(0.3)
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            if (item.isBestSeller)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Icon(
+                                  Icons.star_rounded,
+                                  size: 16,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                       if (isOutOfStock)

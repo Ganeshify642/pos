@@ -1387,6 +1387,16 @@ class $ItemsTableTable extends ItemsTable
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _isBestSellerMeta =
+      const VerificationMeta('isBestSeller');
+  @override
+  late final GeneratedColumn<bool> isBestSeller = GeneratedColumn<bool>(
+      'is_best_seller', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_best_seller" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1399,7 +1409,8 @@ class $ItemsTableTable extends ItemsTable
         lowStockThreshold,
         defaultPrepQty,
         isAvailable,
-        isDeleted
+        isDeleted,
+        isBestSeller
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1472,6 +1483,12 @@ class $ItemsTableTable extends ItemsTable
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
     }
+    if (data.containsKey('is_best_seller')) {
+      context.handle(
+          _isBestSellerMeta,
+          isBestSeller.isAcceptableOrUnknown(
+              data['is_best_seller']!, _isBestSellerMeta));
+    }
     return context;
   }
 
@@ -1503,6 +1520,8 @@ class $ItemsTableTable extends ItemsTable
           .read(DriftSqlType.bool, data['${effectivePrefix}is_available'])!,
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
+      isBestSeller: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_best_seller'])!,
     );
   }
 
@@ -1524,6 +1543,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
   final int defaultPrepQty;
   final bool isAvailable;
   final bool isDeleted;
+  final bool isBestSeller;
   const ItemsTableData(
       {required this.id,
       required this.categoryId,
@@ -1535,7 +1555,8 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       required this.lowStockThreshold,
       required this.defaultPrepQty,
       required this.isAvailable,
-      required this.isDeleted});
+      required this.isDeleted,
+      required this.isBestSeller});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1552,6 +1573,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
     map['default_prep_qty'] = Variable<int>(defaultPrepQty);
     map['is_available'] = Variable<bool>(isAvailable);
     map['is_deleted'] = Variable<bool>(isDeleted);
+    map['is_best_seller'] = Variable<bool>(isBestSeller);
     return map;
   }
 
@@ -1570,6 +1592,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       defaultPrepQty: Value(defaultPrepQty),
       isAvailable: Value(isAvailable),
       isDeleted: Value(isDeleted),
+      isBestSeller: Value(isBestSeller),
     );
   }
 
@@ -1588,6 +1611,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       defaultPrepQty: serializer.fromJson<int>(json['defaultPrepQty']),
       isAvailable: serializer.fromJson<bool>(json['isAvailable']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      isBestSeller: serializer.fromJson<bool>(json['isBestSeller']),
     );
   }
   @override
@@ -1605,6 +1629,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       'defaultPrepQty': serializer.toJson<int>(defaultPrepQty),
       'isAvailable': serializer.toJson<bool>(isAvailable),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'isBestSeller': serializer.toJson<bool>(isBestSeller),
     };
   }
 
@@ -1619,7 +1644,8 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
           int? lowStockThreshold,
           int? defaultPrepQty,
           bool? isAvailable,
-          bool? isDeleted}) =>
+          bool? isDeleted,
+          bool? isBestSeller}) =>
       ItemsTableData(
         id: id ?? this.id,
         categoryId: categoryId ?? this.categoryId,
@@ -1632,6 +1658,7 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
         defaultPrepQty: defaultPrepQty ?? this.defaultPrepQty,
         isAvailable: isAvailable ?? this.isAvailable,
         isDeleted: isDeleted ?? this.isDeleted,
+        isBestSeller: isBestSeller ?? this.isBestSeller,
       );
   ItemsTableData copyWithCompanion(ItemsTableCompanion data) {
     return ItemsTableData(
@@ -1655,6 +1682,9 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       isAvailable:
           data.isAvailable.present ? data.isAvailable.value : this.isAvailable,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      isBestSeller: data.isBestSeller.present
+          ? data.isBestSeller.value
+          : this.isBestSeller,
     );
   }
 
@@ -1671,7 +1701,8 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
           ..write('lowStockThreshold: $lowStockThreshold, ')
           ..write('defaultPrepQty: $defaultPrepQty, ')
           ..write('isAvailable: $isAvailable, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isBestSeller: $isBestSeller')
           ..write(')'))
         .toString();
   }
@@ -1688,7 +1719,8 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
       lowStockThreshold,
       defaultPrepQty,
       isAvailable,
-      isDeleted);
+      isDeleted,
+      isBestSeller);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1703,7 +1735,8 @@ class ItemsTableData extends DataClass implements Insertable<ItemsTableData> {
           other.lowStockThreshold == this.lowStockThreshold &&
           other.defaultPrepQty == this.defaultPrepQty &&
           other.isAvailable == this.isAvailable &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.isBestSeller == this.isBestSeller);
 }
 
 class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
@@ -1718,6 +1751,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
   final Value<int> defaultPrepQty;
   final Value<bool> isAvailable;
   final Value<bool> isDeleted;
+  final Value<bool> isBestSeller;
   const ItemsTableCompanion({
     this.id = const Value.absent(),
     this.categoryId = const Value.absent(),
@@ -1730,6 +1764,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
     this.defaultPrepQty = const Value.absent(),
     this.isAvailable = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.isBestSeller = const Value.absent(),
   });
   ItemsTableCompanion.insert({
     this.id = const Value.absent(),
@@ -1743,6 +1778,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
     this.defaultPrepQty = const Value.absent(),
     this.isAvailable = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.isBestSeller = const Value.absent(),
   })  : categoryId = Value(categoryId),
         name = Value(name),
         sellingPrice = Value(sellingPrice);
@@ -1758,6 +1794,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
     Expression<int>? defaultPrepQty,
     Expression<bool>? isAvailable,
     Expression<bool>? isDeleted,
+    Expression<bool>? isBestSeller,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1771,6 +1808,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
       if (defaultPrepQty != null) 'default_prep_qty': defaultPrepQty,
       if (isAvailable != null) 'is_available': isAvailable,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (isBestSeller != null) 'is_best_seller': isBestSeller,
     });
   }
 
@@ -1785,7 +1823,8 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
       Value<int>? lowStockThreshold,
       Value<int>? defaultPrepQty,
       Value<bool>? isAvailable,
-      Value<bool>? isDeleted}) {
+      Value<bool>? isDeleted,
+      Value<bool>? isBestSeller}) {
     return ItemsTableCompanion(
       id: id ?? this.id,
       categoryId: categoryId ?? this.categoryId,
@@ -1798,6 +1837,7 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
       defaultPrepQty: defaultPrepQty ?? this.defaultPrepQty,
       isAvailable: isAvailable ?? this.isAvailable,
       isDeleted: isDeleted ?? this.isDeleted,
+      isBestSeller: isBestSeller ?? this.isBestSeller,
     );
   }
 
@@ -1837,6 +1877,9 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (isBestSeller.present) {
+      map['is_best_seller'] = Variable<bool>(isBestSeller.value);
+    }
     return map;
   }
 
@@ -1853,7 +1896,8 @@ class ItemsTableCompanion extends UpdateCompanion<ItemsTableData> {
           ..write('lowStockThreshold: $lowStockThreshold, ')
           ..write('defaultPrepQty: $defaultPrepQty, ')
           ..write('isAvailable: $isAvailable, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('isBestSeller: $isBestSeller')
           ..write(')'))
         .toString();
   }
@@ -5239,6 +5283,7 @@ typedef $$ItemsTableTableCreateCompanionBuilder = ItemsTableCompanion Function({
   Value<int> defaultPrepQty,
   Value<bool> isAvailable,
   Value<bool> isDeleted,
+  Value<bool> isBestSeller,
 });
 typedef $$ItemsTableTableUpdateCompanionBuilder = ItemsTableCompanion Function({
   Value<int> id,
@@ -5252,6 +5297,7 @@ typedef $$ItemsTableTableUpdateCompanionBuilder = ItemsTableCompanion Function({
   Value<int> defaultPrepQty,
   Value<bool> isAvailable,
   Value<bool> isDeleted,
+  Value<bool> isBestSeller,
 });
 
 final class $$ItemsTableTableReferences
@@ -5333,6 +5379,9 @@ class $$ItemsTableTableFilterComposer
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isBestSeller => $composableBuilder(
+      column: $table.isBestSeller, builder: (column) => ColumnFilters(column));
 
   $$CategoriesTableTableFilterComposer get categoryId {
     final $$CategoriesTableTableFilterComposer composer = $composerBuilder(
@@ -5418,6 +5467,10 @@ class $$ItemsTableTableOrderingComposer
   ColumnOrderings<bool> get isDeleted => $composableBuilder(
       column: $table.isDeleted, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isBestSeller => $composableBuilder(
+      column: $table.isBestSeller,
+      builder: (column) => ColumnOrderings(column));
+
   $$CategoriesTableTableOrderingComposer get categoryId {
     final $$CategoriesTableTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -5477,6 +5530,9 @@ class $$ItemsTableTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<bool> get isBestSeller => $composableBuilder(
+      column: $table.isBestSeller, builder: (column) => column);
 
   $$CategoriesTableTableAnnotationComposer get categoryId {
     final $$CategoriesTableTableAnnotationComposer composer = $composerBuilder(
@@ -5556,6 +5612,7 @@ class $$ItemsTableTableTableManager extends RootTableManager<
             Value<int> defaultPrepQty = const Value.absent(),
             Value<bool> isAvailable = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
+            Value<bool> isBestSeller = const Value.absent(),
           }) =>
               ItemsTableCompanion(
             id: id,
@@ -5569,6 +5626,7 @@ class $$ItemsTableTableTableManager extends RootTableManager<
             defaultPrepQty: defaultPrepQty,
             isAvailable: isAvailable,
             isDeleted: isDeleted,
+            isBestSeller: isBestSeller,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5582,6 +5640,7 @@ class $$ItemsTableTableTableManager extends RootTableManager<
             Value<int> defaultPrepQty = const Value.absent(),
             Value<bool> isAvailable = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
+            Value<bool> isBestSeller = const Value.absent(),
           }) =>
               ItemsTableCompanion.insert(
             id: id,
@@ -5595,6 +5654,7 @@ class $$ItemsTableTableTableManager extends RootTableManager<
             defaultPrepQty: defaultPrepQty,
             isAvailable: isAvailable,
             isDeleted: isDeleted,
+            isBestSeller: isBestSeller,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

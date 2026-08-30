@@ -66,6 +66,7 @@ class ItemsTable extends Table {
   IntColumn get defaultPrepQty => integer().withDefault(const Constant(0))();
   BoolColumn get isAvailable => boolean().withDefault(const Constant(true))();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  BoolColumn get isBestSeller => boolean().withDefault(const Constant(false))();
 }
 
 class OrdersTable extends Table {
@@ -165,7 +166,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -173,7 +174,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await _insertDefaults();
         },
-        onUpgrade: (m, from, to) async {},
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(itemsTable, itemsTable.isBestSeller);
+          }
+        },
       );
 
   Future<void> _insertDefaults() async {

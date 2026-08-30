@@ -297,6 +297,19 @@ class _CategoriesTab extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          IconButton(
+                            icon: Icon(
+                              item.isBestSeller ? Icons.star_rounded : Icons.star_outline_rounded,
+                              size: 22,
+                              color: item.isBestSeller ? const Color(0xFFF59E0B) : AppColors.textMuted,
+                            ),
+                            onPressed: () => context
+                                .read<MenuProvider>()
+                                .toggleBestSeller(item.id, !item.isBestSeller),
+                            tooltip: item.isBestSeller ? 'Remove Best Seller' : 'Mark as Best Seller',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          ),
                           Switch.adaptive(
                             value: item.isAvailable,
                             onChanged: (v) => context
@@ -406,6 +419,19 @@ class _ItemsTab extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton(
+                      icon: Icon(
+                        item.isBestSeller ? Icons.star_rounded : Icons.star_outline_rounded,
+                        size: 22,
+                        color: item.isBestSeller ? const Color(0xFFF59E0B) : AppColors.textMuted,
+                      ),
+                      onPressed: () => context
+                          .read<MenuProvider>()
+                          .toggleBestSeller(item.id, !item.isBestSeller),
+                      tooltip: item.isBestSeller ? 'Remove Best Seller' : 'Mark as Best Seller',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
                     Switch.adaptive(
                       value: item.isAvailable,
                       onChanged: (v) => context

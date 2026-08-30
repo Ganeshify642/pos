@@ -144,8 +144,13 @@ class ReportProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final range = dateRange;
-      final orders = await _orderRepo.getOrdersForDateRange(
+      final allOrders = await _orderRepo.getOrdersForDateRange(
           range.start, range.end);
+
+      // Exclude cancelled orders from all report calculations
+      final orders = allOrders
+          .where((o) => o.orderStatus != AppConstants.statusCancelled)
+          .toList();
 
       final bySource = <String, SourceStats>{};
       double totalRevenue = 0;

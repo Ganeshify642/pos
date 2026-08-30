@@ -113,4 +113,21 @@ class MenuRepository {
               t.isAvailable.equals(true)))
         .get();
   }
+
+  /// Toggle best seller status for an item
+  Future<void> toggleBestSeller(int id, bool isBestSeller) async {
+    await (_db.update(_db.itemsTable)..where((t) => t.id.equals(id)))
+        .write(ItemsTableCompanion(isBestSeller: Value(isBestSeller)));
+  }
+
+  /// Get all items marked as best sellers
+  Future<List<Item>> getBestSellerItems() async {
+    return await (_db.select(_db.itemsTable)
+          ..where((t) =>
+              t.isBestSeller.equals(true) &
+              t.isDeleted.equals(false) &
+              t.isAvailable.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .get();
+  }
 }

@@ -377,9 +377,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          //  Items - always first, acts as virtual "all with s first"
+          //  Best Sellers - always first
           _buildCategoryPill(
-            title: ' Items',
+            title: '⭐ Best Sellers',
             isSelected: _selectedCategoryId == -1,
             onTap: () => setState(() => _selectedCategoryId = -1),
           ),
@@ -390,7 +390,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             onTap: () => setState(() => _selectedCategoryId = null),
           ),
           const SizedBox(width: 8),
-          ...categories.where((cat) => cat.name != ' Items').map((cat) {
+          ...categories.map((cat) {
             final isSel = _selectedCategoryId == cat.id;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -448,13 +448,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     var items = menuProvider.items;
 
     if (_selectedCategoryId == -1) {
-      //  Items: show ALL items, but sort s to top
-      items = List<Item>.from(items);
-      items.sort((a, b) {
-        final aIsBest = a.name.contains('') ? 0 : 1;
-        final bIsBest = b.name.contains('') ? 0 : 1;
-        return aIsBest.compareTo(bIsBest);
-      });
+      // Best Sellers: show only items marked as best sellers
+      items = menuProvider.bestSellerItems;
     } else if (_selectedCategoryId != null) {
       items = items.where((i) => i.categoryId == _selectedCategoryId).toList();
     }
@@ -746,7 +741,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isStaff ? 'Save Staff' : 'Print Bill',
+                        isStaff ? 'Staff' : 'Print Bill',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
