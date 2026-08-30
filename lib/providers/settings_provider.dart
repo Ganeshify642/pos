@@ -69,6 +69,17 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _businessSettings = await _repo.getBusinessSettings();
+      if (_businessSettings == null ||
+          _businessSettings!.businessName == 'My Restaurant' ||
+          _businessSettings!.businessName.trim().isEmpty) {
+        await _repo.saveBusinessSettings(BusinessSettingsTableCompanion(
+          businessName: const Value('ગોપાલ વડાપાંવ'),
+          phone: Value(_businessSettings?.phone ?? ''),
+          address: Value(_businessSettings?.address ?? ''),
+          gstId: Value(_businessSettings?.gstId ?? ''),
+        ));
+        _businessSettings = await _repo.getBusinessSettings();
+      }
       _taxSettings = await _repo.getTaxSettings();
       _deliveryApps = await _repo.getAllDeliveryApps();
       _error = null;

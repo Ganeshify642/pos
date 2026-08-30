@@ -10,7 +10,7 @@ class BusinessSettingsTable extends Table {
   String get tableName => 'business_settings';
 
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get businessName => text().withDefault(const Constant('My Restaurant'))();
+  TextColumn get businessName => text().withDefault(const Constant('ગોપાલ વડાપાંવ '))();
   TextColumn get phone => text().withDefault(const Constant(''))();
   TextColumn get address => text().withDefault(const Constant(''))();
   TextColumn get gstId => text().withDefault(const Constant(''))();
@@ -185,7 +185,7 @@ class AppDatabase extends _$AppDatabase {
     // Insert default business settings
     await into(businessSettingsTable).insert(
       BusinessSettingsTableCompanion.insert(
-        businessName: const Value('My Restaurant'),
+        businessName: const Value('ગોપાલ વડાપાંવ '),
         phone: const Value(''),
         address: const Value(''),
         gstId: const Value(''),

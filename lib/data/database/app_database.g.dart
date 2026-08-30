@@ -25,7 +25,7 @@ class $BusinessSettingsTableTable extends BusinessSettingsTable
       'business_name', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultValue: const Constant('My Restaurant'));
+      defaultValue: const Constant('ગોપાલ વડાપાંવ '));
   static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
   @override
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
