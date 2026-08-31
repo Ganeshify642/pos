@@ -394,6 +394,8 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                             builder: (_) => InvoicePreviewScreen(
                                               orderId: order.id,
                                               invoicePath: order.invoicePath,
+                                              autoPrint: false,
+                                              autoRedirect: false,
                                             ),
                                           ),
                                         )

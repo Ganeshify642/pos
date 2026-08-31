@@ -500,6 +500,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                 builder: (_) => InvoicePreviewScreen(
                   orderId: order.id,
                   invoicePath: order.invoicePath,
+                  autoPrint: false,
+                  autoRedirect: false,
                 ),
               )),
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),

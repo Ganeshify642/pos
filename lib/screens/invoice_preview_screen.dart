@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
@@ -17,12 +18,14 @@ class InvoicePreviewScreen extends StatefulWidget {
   final int orderId;
   final String? invoicePath;
   final bool autoPrint;
+  final bool autoRedirect;
 
   const InvoicePreviewScreen({
     super.key,
     required this.orderId,
     this.invoicePath,
     this.autoPrint = true,
+    this.autoRedirect = true,
   });
 
   @override
@@ -32,21 +35,62 @@ class InvoicePreviewScreen extends StatefulWidget {
 class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
   bool _sharing = false;
   bool _isPrintingThermal = false;
+  Timer? _redirectTimer;
+  final ValueNotifier<int> _secondsRemainingNotifier = ValueNotifier<int>(4);
 
   @override
   void initState() {
     super.initState();
-    if (widget.autoPrint) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final printer = context.read<PrinterProvider>();
-        if (printer.isConnected) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final printer = context.read<PrinterProvider>();
+      if (printer.isConnected) {
+        if (widget.autoPrint) {
           _printThermal();
         }
-      });
-    }
+        if (widget.autoRedirect) {
+          _startRedirectTimer();
+        }
+      }
+    });
+  }
+
+  void _startRedirectTimer() {
+    _redirectTimer?.cancel();
+    _secondsRemainingNotifier.value = 4;
+    _redirectTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_secondsRemainingNotifier.value <= 1) {
+        timer.cancel();
+        _secondsRemainingNotifier.value = 0;
+        _goToSellScreen();
+      } else {
+        _secondsRemainingNotifier.value -= 1;
+      }
+    });
+  }
+
+  void _goToSellScreen() {
+    _redirectTimer?.cancel();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 2)),
+      (_) => false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _redirectTimer?.cancel();
+    _secondsRemainingNotifier.dispose();
+    super.dispose();
   }
 
   Future<void> _shareInvoice() async {
+    _redirectTimer?.cancel();
     if (widget.invoicePath == null) return;
     setState(() => _sharing = true);
     try {
@@ -121,13 +165,6 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
     }
   }
 
-  void _goHome() {
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (_) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -161,7 +198,10 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
             tooltip: printer.isConnected
                 ? 'Printer Connected (${printer.connectedPrinter?.name ?? "Thermal Printer"})'
                 : 'Manage Thermal Printer',
-            onPressed: () => PrinterDialog.show(context),
+            onPressed: () {
+              _redirectTimer?.cancel();
+              PrinterDialog.show(context);
+            },
           ),
           if (path != null)
             IconButton(
@@ -174,9 +214,12 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
           IconButton(
             icon: const Icon(Icons.visibility_outlined, size: 20, color: Color(0xFF64748B)),
             tooltip: 'View Order Details',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => OrderDetailsScreen(orderId: widget.orderId)),
-            ),
+            onPressed: () {
+              _redirectTimer?.cancel();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => OrderDetailsScreen(orderId: widget.orderId)),
+              );
+            },
           ),
           const SizedBox(width: 6),
         ],
@@ -211,8 +254,30 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                     ),
                   ),
                 ),
+                ValueListenableBuilder<int>(
+                  valueListenable: _secondsRemainingNotifier,
+                  builder: (context, seconds, _) {
+                    if (!widget.autoRedirect || seconds <= 0 || !printer.isConnected) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        'Redirecting in ${seconds}s...',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 InkWell(
-                  onTap: () => PrinterDialog.show(context),
+                  onTap: () {
+                    _redirectTimer?.cancel();
+                    PrinterDialog.show(context);
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     child: Text(
@@ -289,16 +354,23 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
                     child: SizedBox(
                       height: 48,
                       child: OutlinedButton.icon(
-                        onPressed: _goHome,
+                        onPressed: _goToSellScreen,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF0F172A),
                           side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                        label: const Text(
-                          'Done',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                        label: ValueListenableBuilder<int>(
+                          valueListenable: _secondsRemainingNotifier,
+                          builder: (context, seconds, _) {
+                            return Text(
+                              widget.autoRedirect && seconds > 0 && printer.isConnected
+                                  ? 'Done (${seconds}s)'
+                                  : 'Done',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            );
+                          },
                         ),
                       ),
                     ),
