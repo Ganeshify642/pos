@@ -17,16 +17,109 @@ class OrdersListScreen extends StatefulWidget {
 }
 
 class _OrdersListScreenState extends State<OrdersListScreen> {
-  String? _selectedSource;
-  String? _selectedStatus;
-  DateTime? _selectedDate;
+  String _selectedDateRange = 'Today';
+  String _customLabel = 'Custom';
+
+  static const List<String> _dateRangeOptions = [
+    'Today',
+    'Yesterday',
+    'Last 7 Days',
+    'Last 30 Days',
+    'All',
+  ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<OrderProvider>().loadOrders();
+      _applyDateRange('Today');
     });
+  }
+
+  void _applyDateRange(String range) {
+    setState(() => _selectedDateRange = range);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final provider = context.read<OrderProvider>();
+
+    switch (range) {
+      case 'Today':
+        provider.setFilterDate(today);
+        break;
+      case 'Yesterday':
+        provider.setFilterDate(today.subtract(const Duration(days: 1)));
+        break;
+      case 'Last 7 Days':
+        provider.setFilterDateRange(
+          today.subtract(const Duration(days: 6)),
+          now,
+        );
+        break;
+      case 'Last 30 Days':
+        provider.setFilterDateRange(
+          today.subtract(const Duration(days: 29)),
+          now,
+        );
+        break;
+      case 'All':
+        provider.clearFilters();
+        break;
+      case 'Custom':
+        _showCustomDatePicker();
+        break;
+    }
+  }
+
+  Future<void> _showCustomDatePicker() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now,
+      initialDateRange: DateTimeRange(
+        start: today,
+        end: today,
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFFF4500),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF0F172A),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      final start = picked.start;
+      final end = picked.end;
+      final provider = context.read<OrderProvider>();
+
+      // Check if same day selected (single date)
+      if (start.year == end.year &&
+          start.month == end.month &&
+          start.day == end.day) {
+        provider.setFilterDate(start);
+        setState(() {
+          _customLabel =
+              '${start.day}/${start.month}/${start.year}';
+          _selectedDateRange = 'Custom';
+        });
+      } else {
+        provider.setFilterDateRange(start, end);
+        setState(() {
+          _customLabel =
+              '${start.day}/${start.month} - ${end.day}/${end.month}';
+          _selectedDateRange = 'Custom';
+        });
+      }
+    }
   }
 
   @override
@@ -55,56 +148,66 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                     ),
                   ),
                   const Spacer(),
-                  // Date Filter Action Button
+                  // Custom Date Picker Button
                   _HeaderActionButton(
-                    icon: Icons.calendar_today_outlined,
-                    tooltip: 'Filter Date',
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setState(() => _selectedDate = picked);
-                        if (context.mounted) {
-                          context.read<OrderProvider>().setFilterDate(picked);
-                        }
-                      }
-                    },
+                    icon: Icons.calendar_month_rounded,
+                    tooltip: 'Custom Date',
+                    isActive: _selectedDateRange == 'Custom',
+                    onTap: () => _applyDateRange('Custom'),
                   ),
-                  if (_selectedDate != null ||
-                      _selectedSource != null ||
-                      _selectedStatus != null) ...[
-                    const SizedBox(width: 6),
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedSource = null;
-                          _selectedStatus = null;
-                          _selectedDate = null;
-                        });
-                        context.read<OrderProvider>().clearFilters();
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Text(
-                          'Clear',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFFF4500),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
+            // Custom date label indicator with clear button
+            if (_selectedDateRange == 'Custom')
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.only(
+                          left: 10, top: 4, bottom: 4, right: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF0ED),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 12,
+                            color: Color(0xFFFF4500),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _customLabel,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF4500),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => _applyDateRange('Today'),
+                            borderRadius: BorderRadius.circular(10),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 14,
+                                color: Color(0xFFFF4500),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // ── Top Performance Summary Cards (Total Orders & Total Sales) ──
             Padding(
@@ -166,14 +269,14 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                     color: Color(0xFF64748B),
                                   ),
                                 ),
-                                const Text(
-                                  'Today',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFFFF4500),
-                                  ),
-                                ),
+                                Text(
+                                   _selectedDateRange,
+                                   style: const TextStyle(
+                                     fontSize: 11.5,
+                                     fontWeight: FontWeight.w700,
+                                     color: Color(0xFFFF4500),
+                                   ),
+                                 ),
                               ],
                             ),
                           ),
@@ -239,14 +342,14 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                     color: Color(0xFF64748B),
                                   ),
                                 ),
-                                const Text(
-                                  'Today',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF10B981),
-                                  ),
-                                ),
+                                Text(
+                                   _selectedDateRange,
+                                   style: const TextStyle(
+                                     fontSize: 11.5,
+                                     fontWeight: FontWeight.w700,
+                                     color: Color(0xFF10B981),
+                                   ),
+                                 ),
                               ],
                             ),
                           ),
@@ -259,65 +362,26 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Source Filter Pills Bar ────────────────────────────────────
+            // ── Date Range Filter Pills Bar ──────────────────────────────
+            const SizedBox(height: 8),
             SizedBox(
               height: 38,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  // 'All' Pill
-                  _FilterPill(
-                    label: 'All',
-                    isSelected: _selectedSource == null,
-                    onTap: () {
-                      setState(() => _selectedSource = null);
-                      context.read<OrderProvider>().setFilterSource(null);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  // Sources Pills
-                  ...AppConstants.orderSources.map((s) {
-                    final isSelected = _selectedSource == s;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _FilterPill(
-                        label: s,
-                        isSelected: isSelected,
-                        onTap: () {
-                          setState(() => _selectedSource = isSelected ? null : s);
-                          context
-                              .read<OrderProvider>()
-                              .setFilterSource(isSelected ? null : s);
-                        },
-                      ),
-                    );
-                  }),
-                ],
+                children: _dateRangeOptions.map((range) {
+                  final isSelected = _selectedDateRange == range;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _FilterPill(
+                      label: range,
+                      isSelected: isSelected,
+                      onTap: () => _applyDateRange(range),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-
-            // Date Selected Indicator
-            if (_selectedDate != null)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today_rounded,
-                        size: 13, color: Color(0xFFFF4500)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Filtered: ${AppFormatters.date(_selectedDate!)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFF4500),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
             const SizedBox(height: 8),
 
@@ -329,10 +393,8 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                       ? EmptyState(
                           icon: Icons.receipt_long_outlined,
                           title: 'No orders found',
-                          subtitle: _selectedSource != null ||
-                                  _selectedStatus != null ||
-                                  _selectedDate != null
-                              ? 'Try clearing filters'
+                          subtitle: _selectedDateRange != 'All'
+                              ? 'Try selecting a different date range'
                               : 'Tap + to create your first order',
                         )
                       : RefreshIndicator(
@@ -462,11 +524,13 @@ class _HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final bool isActive;
 
   const _HeaderActionButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.isActive = false,
   });
 
   @override
@@ -480,13 +544,20 @@ class _HeaderActionButton extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isActive ? const Color(0xFFFF4500) : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFFFF4500)
+                  : const Color(0xFFE2E8F0),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 4,
+                color: isActive
+                    ? const Color(0xFFFF4500).withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.02),
+                blurRadius: isActive ? 6 : 4,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -494,7 +565,7 @@ class _HeaderActionButton extends StatelessWidget {
           child: Icon(
             icon,
             size: 20,
-            color: const Color(0xFF475569),
+            color: isActive ? Colors.white : const Color(0xFF475569),
           ),
         ),
       ),
@@ -506,11 +577,13 @@ class _FilterPill extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   const _FilterPill({
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.icon,
   });
 
   @override
@@ -537,13 +610,26 @@ class _FilterPill extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF475569),
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : const Color(0xFF475569),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF475569),
+              ),
+            ),
+          ],
         ),
       ),
     );
