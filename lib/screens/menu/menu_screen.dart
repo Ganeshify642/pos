@@ -70,6 +70,11 @@ class _MenuScreenState extends State<MenuScreen>
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.stars_rounded, color: Color(0xFFF59E0B), size: 26),
+            tooltip: 'Best Sellers Ranking',
+            onPressed: () => showReorderBestSellersSheet(context),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
@@ -545,24 +550,8 @@ class _CategoriesTabState extends State<_CategoriesTab> {
                                 ],
                               ),
                             ),
-                            // Best Seller Star Toggle
-                            IconButton(
-                              icon: Icon(
-                                item.isBestSeller
-                                    ? Icons.star_rounded
-                                    : Icons.star_outline_rounded,
-                                size: 22,
-                                color: item.isBestSeller
-                                    ? const Color(0xFFF59E0B)
-                                    : const Color(0xFFCBD5E1),
-                              ),
-                              onPressed: () => context
-                                  .read<MenuProvider>()
-                                  .toggleBestSeller(item.id, !item.isBestSeller),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              tooltip: item.isBestSeller ? 'Remove Best Seller' : 'Mark as Best Seller',
-                            ),
+                            // Best Seller Star / Rank Toggle
+                            BestSellerRankToggleWidget(item: item),
                             // Active Toggle Switch
                             Transform.scale(
                               scale: 0.75,
@@ -883,24 +872,8 @@ class _ItemsTabState extends State<_ItemsTab> {
                               ],
                             ),
                           ),
-                          // Best Seller Star Toggle
-                          IconButton(
-                            icon: Icon(
-                              item.isBestSeller
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              size: 22,
-                              color: item.isBestSeller
-                                  ? const Color(0xFFF59E0B)
-                                  : const Color(0xFFCBD5E1),
-                            ),
-                            onPressed: () => context
-                                .read<MenuProvider>()
-                                .toggleBestSeller(item.id, !item.isBestSeller),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            tooltip: item.isBestSeller ? 'Remove Best Seller' : 'Mark as Best Seller',
-                          ),
+                          // Best Seller Star / Rank Toggle
+                          BestSellerRankToggleWidget(item: item),
                           // Active Switch
                           Transform.scale(
                             scale: 0.75,
@@ -1310,4 +1283,452 @@ _CategoryVisual _getCategoryStyle(String name) {
     return const _CategoryVisual(Color(0xFFF43F5E), Icons.local_offer_rounded);
   }
   return const _CategoryVisual(Color(0xFFFF5722), Icons.fastfood_rounded);
+}
+
+// ── Best Seller Rank Widgets & Dialogs ─────────────────────────────────────────
+
+class BestSellerRankToggleWidget extends StatelessWidget {
+  final Item item;
+
+  const BestSellerRankToggleWidget({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    if (item.isBestSeller) {
+      final rank = item.bestSellerRank ?? 1;
+      return InkWell(
+        onTap: () => showBestSellerRankDialog(context, item),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFF59E0B), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.star_rounded, size: 15, color: Color(0xFFD97706)),
+              const SizedBox(width: 3),
+              Text(
+                '#$rank',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFB45309),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return IconButton(
+      icon: const Icon(
+        Icons.star_outline_rounded,
+        size: 22,
+        color: Color(0xFFCBD5E1),
+      ),
+      onPressed: () async {
+        final menuProvider = context.read<MenuProvider>();
+        final currentBestSellers = menuProvider.bestSellerItems;
+        final nextRank = currentBestSellers.length + 1;
+        await menuProvider.toggleBestSeller(item.id, true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.star_rounded, color: Color(0xFFF59E0B)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Marked "${item.name}" as Best Seller #$nextRank',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      },
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      tooltip: 'Mark as Best Seller',
+    );
+  }
+}
+
+void showBestSellerRankDialog(BuildContext context, Item item) {
+  final menuProvider = context.read<MenuProvider>();
+  final currentBestSellers = menuProvider.bestSellerItems;
+  final totalBestSellers = currentBestSellers.length;
+  final currentRank = item.bestSellerRank ?? 1;
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFF59E0B)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star_rounded, size: 18, color: Color(0xFFD97706)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '#$currentRank',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Best Seller Rank: #$currentRank of $totalBestSellers',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Change Rank Position',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF334155),
+                  ),
+                ),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: const Color(0xFFFF5722),
+                  ),
+                  icon: const Icon(Icons.swap_vert_rounded, size: 16),
+                  label: const Text('Reorder All', style: TextStyle(fontSize: 12)),
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    showReorderBestSellersSheet(context);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(totalBestSellers, (idx) {
+                final rankNum = idx + 1;
+                final isSelected = rankNum == currentRank;
+                return InkWell(
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    if (!isSelected) {
+                      await menuProvider.updateBestSellerRank(item.id, rankNum);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Changed "${item.name}" rank to #$rankNum'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 48,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFF59E0B) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFFD97706) : const Color(0xFFCBD5E1),
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '#$rankNum',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: isSelected ? Colors.white : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                side: const BorderSide(color: Color(0xFFEF4444)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                foregroundColor: const Color(0xFFEF4444),
+              ),
+              icon: const Icon(Icons.star_border_rounded, size: 18),
+              label: const Text('Remove from Best Sellers', style: TextStyle(fontWeight: FontWeight.w600)),
+              onPressed: () async {
+                Navigator.pop(sheetContext);
+                await menuProvider.toggleBestSeller(item.id, false);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Removed "${item.name}" from Best Sellers'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void showReorderBestSellersSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final menuProvider = ctx.watch<MenuProvider>();
+          final bestSellers = menuProvider.bestSellerItems;
+
+          return Container(
+            height: MediaQuery.of(ctx).size.height * 0.75,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.stars_rounded, color: Color(0xFFF59E0B), size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Best Sellers Ranking',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            '${bestSellers.length} items ranked by priority',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(sheetContext),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Drag items using the handle on the right to reorder ranks (#1, #2, #3...)',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                Expanded(
+                  child: bestSellers.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: Text(
+                              'No Best Sellers selected yet.\nTap the star icon on any menu item to add it as #1, #2, etc. in selection order.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Color(0xFF64748B), height: 1.5),
+                            ),
+                          ),
+                        )
+                      : ReorderableListView.builder(
+                          itemCount: bestSellers.length,
+                          onReorder: (oldIndex, newIndex) async {
+                            if (oldIndex < newIndex) {
+                              newIndex -= 1;
+                            }
+                            final list = List<Item>.from(bestSellers);
+                            final movedItem = list.removeAt(oldIndex);
+                            list.insert(newIndex, movedItem);
+                            final newIds = list.map((e) => e.id).toList();
+                            await menuProvider.reorderBestSellers(newIds);
+                          },
+                          itemBuilder: (itemCtx, index) {
+                            final item = bestSellers[index];
+                            final rank = index + 1;
+                            return Container(
+                              key: ValueKey(item.id),
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: rank <= 3 ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
+                                  width: rank <= 3 ? 1.2 : 1,
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                leading: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: rank <= 3 ? const Color(0xFFFEF3C7) : const Color(0xFFE2E8F0),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '#$rank',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                        color: rank <= 3 ? const Color(0xFFB45309) : const Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  item.name,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                ),
+                                subtitle: Text(
+                                  '₹${item.sellingPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF059669)),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFEF4444), size: 20),
+                                      tooltip: 'Remove from Best Sellers',
+                                      onPressed: () async {
+                                        await menuProvider.toggleBestSeller(item.id, false);
+                                      },
+                                    ),
+                                    const Icon(Icons.drag_handle_rounded, color: Color(0xFF94A3B8)),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }

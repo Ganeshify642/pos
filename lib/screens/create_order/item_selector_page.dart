@@ -288,12 +288,38 @@ class _ItemTile extends StatelessWidget {
                               ),
                             ),
                             if (item.isBestSeller)
-                              const Padding(
-                                padding: EdgeInsets.only(left: 4),
-                                child: Icon(
-                                  Icons.star_rounded,
-                                  size: 16,
-                                  color: Color(0xFFF59E0B),
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFFF59E0B),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.star_rounded,
+                                      size: 13,
+                                      color: Color(0xFFD97706),
+                                    ),
+                                    if (item.bestSellerRank != null) ...[
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '#${item.bestSellerRank}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                           ],

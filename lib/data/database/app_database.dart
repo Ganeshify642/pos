@@ -67,6 +67,7 @@ class ItemsTable extends Table {
   BoolColumn get isAvailable => boolean().withDefault(const Constant(true))();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   BoolColumn get isBestSeller => boolean().withDefault(const Constant(false))();
+  IntColumn get bestSellerRank => integer().nullable()();
 }
 
 class OrdersTable extends Table {
@@ -164,9 +165,10 @@ class BackupLogsTable extends Table {
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -177,6 +179,9 @@ class AppDatabase extends _$AppDatabase {
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.addColumn(itemsTable, itemsTable.isBestSeller);
+          }
+          if (from < 3) {
+            await m.addColumn(itemsTable, itemsTable.bestSellerRank);
           }
         },
       );

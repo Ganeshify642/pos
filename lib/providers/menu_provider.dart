@@ -107,13 +107,33 @@ class MenuProvider extends ChangeNotifier {
     return await _repo.searchItems(query);
   }
 
-  /// Items marked as best sellers
-  List<Item> get bestSellerItems =>
-      _items.where((Item i) => i.isBestSeller).toList();
+  /// Items marked as best sellers, sorted ascending by bestSellerRank (1st, 2nd, 3rd...)
+  List<Item> get bestSellerItems {
+    final list = _items.where((Item i) => i.isBestSeller).toList();
+    list.sort((a, b) {
+      final rankA = a.bestSellerRank ?? 999999;
+      final rankB = b.bestSellerRank ?? 999999;
+      if (rankA != rankB) return rankA.compareTo(rankB);
+      return a.name.compareTo(b.name);
+    });
+    return list;
+  }
 
   /// Toggle best seller status for an item
   Future<void> toggleBestSeller(int id, bool isBestSeller) async {
     await _repo.toggleBestSeller(id, isBestSeller);
+    await loadAll();
+  }
+
+  /// Update rank of a best seller item
+  Future<void> updateBestSellerRank(int id, int targetRank) async {
+    await _repo.updateBestSellerRank(id, targetRank);
+    await loadAll();
+  }
+
+  /// Reorder best sellers
+  Future<void> reorderBestSellers(List<int> itemIdsInOrder) async {
+    await _repo.reorderBestSellers(itemIdsInOrder);
     await loadAll();
   }
 }
