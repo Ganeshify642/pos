@@ -6,7 +6,6 @@ import '../../models/app_models.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/order_provider.dart';
-import '../../providers/printer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/mock_data_service.dart';
 import '../../utils/app_colors.dart';
@@ -38,8 +37,20 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MenuProvider>().loadAll();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final menu = context.read<MenuProvider>();
+      await menu.loadAll();
+      if (!mounted) return;
+      if (menu.items.isEmpty) {
+        final db = context.read<AppDatabase>();
+        final lang = context.read<SettingsProvider>().menuLanguage;
+        await MockDataService.loadVadapavMockData(db, language: lang);
+        if (!mounted) return;
+        await menu.loadAll();
+        if (!mounted) return;
+        await context.read<InventoryProvider>().loadInventoryStatus();
+      }
     });
   }
 
@@ -464,7 +475,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         secondaryActionLabel: 'Load Sample Menu',
         onSecondaryAction: () async {
           final db = context.read<AppDatabase>();
-          await MockDataService.loadVadapavMockData(db);
+          final lang = context.read<SettingsProvider>().menuLanguage;
+          await MockDataService.loadVadapavMockData(db, language: lang);
           if (context.mounted) {
             await context.read<SettingsProvider>().loadSettings();
             if (context.mounted) await context.read<MenuProvider>().loadAll();

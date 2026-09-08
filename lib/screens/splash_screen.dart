@@ -2,9 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/database/app_database.dart';
+import '../providers/inventory_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/menu_provider.dart';
 import '../providers/printer_provider.dart';
+import '../services/mock_data_service.dart';
 import '../utils/app_colors.dart';
 import 'home_screen.dart';
 
@@ -79,12 +82,22 @@ class _SplashScreenState extends State<SplashScreen>
     final settings = context.read<SettingsProvider>();
     final menu = context.read<MenuProvider>();
     final printer = context.read<PrinterProvider>();
+    final db = context.read<AppDatabase>();
 
     await Future.wait([
       settings.loadSettings(),
       menu.loadAll(),
       printer.requestPermissionsAndInit(),
     ]);
+
+    // If fresh app / empty menu, automatically load all default items, images, and inventory
+    if (menu.items.isEmpty) {
+      await MockDataService.loadVadapavMockData(db, language: settings.menuLanguage);
+      await menu.loadAll();
+      if (mounted) {
+        await context.read<InventoryProvider>().loadInventoryStatus();
+      }
+    }
 
     await Future.delayed(const Duration(milliseconds: 800));
 

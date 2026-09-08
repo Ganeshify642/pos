@@ -33,8 +33,20 @@ class _MenuScreenState extends State<MenuScreen>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MenuProvider>().loadAll();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final menu = context.read<MenuProvider>();
+      await menu.loadAll();
+      if (!mounted) return;
+      if (menu.items.isEmpty) {
+        final db = context.read<AppDatabase>();
+        final lang = context.read<SettingsProvider>().menuLanguage;
+        await MockDataService.loadVadapavMockData(db, language: lang);
+        if (!mounted) return;
+        await menu.loadAll();
+        if (!mounted) return;
+        await context.read<InventoryProvider>().loadInventoryStatus();
+      }
     });
   }
 
@@ -360,7 +372,8 @@ class _CategoriesTabState extends State<_CategoriesTab> {
         secondaryActionLabel: 'Load Demo Menu',
         onSecondaryAction: () async {
           final db = context.read<AppDatabase>();
-          await MockDataService.loadVadapavMockData(db);
+          final lang = context.read<SettingsProvider>().menuLanguage;
+          await MockDataService.loadVadapavMockData(db, language: lang);
           if (context.mounted) {
             await context.read<SettingsProvider>().loadSettings();
             await context.read<MenuProvider>().loadAll();
@@ -684,7 +697,8 @@ class _ItemsTabState extends State<_ItemsTab> {
         secondaryActionLabel: 'Load Demo Menu',
         onSecondaryAction: () async {
           final db = context.read<AppDatabase>();
-          await MockDataService.loadVadapavMockData(db);
+          final lang = context.read<SettingsProvider>().menuLanguage;
+          await MockDataService.loadVadapavMockData(db, language: lang);
           if (context.mounted) {
             await context.read<SettingsProvider>().loadSettings();
             await context.read<MenuProvider>().loadAll();
@@ -973,10 +987,41 @@ class _ItemForm extends StatefulWidget {
 class _ItemFormState extends State<_ItemForm> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
+  final _costPriceController = TextEditingController();
+  final _lowStockController = TextEditingController();
+  final _prepQtyController = TextEditingController();
   final _descController = TextEditingController();
   int? _selectedCategoryId;
   String? _imagePath;
+  bool _isBestSeller = false;
+  int? _bestSellerRank;
   final _picker = ImagePicker();
+
+  static const List<(String, String)> _presetImages = [
+    ('assets/images/item/vadapav.jpeg', 'સાદા વડાપાંઉ'),
+    ('assets/images/item/butter.jpg.jpeg', 'અમુલ બટર વડાપાંઉ'),
+    ('assets/images/item/double_butter.jpeg', 'અમુલ ડબલ બટર'),
+    ('assets/images/item/double_butter_2.jpeg', 'ડબલ બટર ૨'),
+    ('assets/images/item/cheese_vadapav.jpeg', 'અમુલ ચીઝ વડાપાંઉ'),
+    ('assets/images/item/double_butter_cheeze.jpeg', 'ડબલ બટર ચીઝ'),
+    ('assets/images/item/double_cheese.jpeg', 'ડબલ ચીઝ'),
+    ('assets/images/item/Cheese_tanduari.jpeg', 'ચીઝ તંદુરી'),
+    ('assets/images/item/cheese_garlik.jpg.jpeg', 'ચીઝ ગાર્લિક'),
+    ('assets/images/item/garlik_mayo.jpeg', 'ગાર્લિક માયો'),
+    ('assets/images/item/cheez_sezvan.jpeg', 'ચીઝ સેઝવાન'),
+    ('assets/images/item/cheese_mamri_pav.jpeg', 'ચીઝ મમરી'),
+    ('assets/images/item/cheese_mamari.jpg.jpeg', 'મમરી પાંઉ'),
+    ('assets/images/item/garlik_mamari.jpeg', 'ગાર્લિક મમરી'),
+    ('assets/images/item/vada_1.jpeg', 'વડા ૧'),
+    ('assets/images/item/vada_2.jpeg', 'વડા ૨'),
+    ('assets/images/item/butter_chatani.png', 'બટર ચટણી'),
+    ('assets/images/item/cheese_chatani.jpeg', 'ચીઝ ચટણી'),
+    ('assets/images/item/Chhas.jpeg', 'છાશ'),
+    ('assets/images/item/cream_role.jpeg', 'ક્રીમ રોલ'),
+    ('assets/images/item/extra_patti.jpeg', 'પટ્ટી મરચા'),
+    ('assets/images/item/chikki.jpeg', 'ચીક્કી'),
+    ('assets/images/item/watter.png', 'પાણી બોટલ'),
+  ];
 
   @override
   void initState() {
@@ -984,9 +1029,17 @@ class _ItemFormState extends State<_ItemForm> {
     if (widget.item != null) {
       _nameController.text = widget.item!.name;
       _priceController.text = '${widget.item!.sellingPrice}';
+      _costPriceController.text = '${widget.item!.costPrice}';
+      _lowStockController.text = '${widget.item!.lowStockThreshold}';
+      _prepQtyController.text = '${widget.item!.defaultPrepQty}';
       _descController.text = widget.item!.description;
       _selectedCategoryId = widget.item!.categoryId;
       _imagePath = widget.item!.imageUrl;
+      _isBestSeller = widget.item!.isBestSeller;
+      _bestSellerRank = widget.item!.bestSellerRank;
+    } else {
+      _lowStockController.text = '5';
+      _prepQtyController.text = '0';
     }
   }
 
@@ -994,6 +1047,9 @@ class _ItemFormState extends State<_ItemForm> {
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
+    _costPriceController.dispose();
+    _lowStockController.dispose();
+    _prepQtyController.dispose();
     _descController.dispose();
     super.dispose();
   }
@@ -1017,28 +1073,130 @@ class _ItemFormState extends State<_ItemForm> {
     }
   }
 
+  void _showPresetPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Preset Photo',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: GridView.builder(
+                  controller: scrollController,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: _presetImages.length,
+                  itemBuilder: (_, idx) {
+                    final item = _presetImages[idx];
+                    final isSelected = _imagePath == item.$1;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _imagePath = item.$1);
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFFFF5722) : const Color(0xFFE2E8F0),
+                            width: isSelected ? 2.5 : 1,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                child: ItemImageWidget(
+                                  imageUrl: item.$1,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  placeholder: const Icon(Icons.fastfood),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                              child: Text(
+                                item.$2,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showImageSourcePicker() {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => SafeArea(
+      builder: (ctx) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take Photo'),
+              leading: const Icon(Icons.photo_library_outlined, color: Color(0xFFFF5722)),
+              title: const Text('Choose from Presets / App Images'),
               onTap: () {
-                Navigator.pop(_);
+                Navigator.pop(ctx);
+                _showPresetPicker();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo (Camera)'),
+              onTap: () {
+                Navigator.pop(ctx);
                 _pickImage(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: const Icon(Icons.image_outlined),
               title: const Text('Choose from Gallery'),
               onTap: () {
-                Navigator.pop(_);
+                Navigator.pop(ctx);
                 _pickImage(ImageSource.gallery);
               },
             ),
@@ -1047,7 +1205,7 @@ class _ItemFormState extends State<_ItemForm> {
                 leading: const Icon(Icons.delete_outline, color: Colors.red),
                 title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
                 onTap: () {
-                  Navigator.pop(_);
+                  Navigator.pop(ctx);
                   setState(() => _imagePath = null);
                 },
               ),
@@ -1094,29 +1252,35 @@ class _ItemFormState extends State<_ItemForm> {
               child: GestureDetector(
                 onTap: _showImageSourcePicker,
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: 104,
+                  height: 104,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF0ED),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFFCCBC), width: 1.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFFCCBC), width: 1.5),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _imagePath != null
                       ? Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.file(File(_imagePath!), fit: BoxFit.cover),
+                            ItemImageWidget(
+                              imageUrl: _imagePath,
+                              fit: BoxFit.cover,
+                              placeholder: const Center(
+                                child: Icon(Icons.restaurant_menu_rounded, size: 32, color: Color(0xFFFF5722)),
+                              ),
+                            ),
                             Positioned(
                               bottom: 4,
                               right: 4,
                               child: Container(
-                                padding: const EdgeInsets.all(4),
+                                padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                                child: const Icon(Icons.edit, size: 13, color: Colors.white),
                               ),
                             ),
                           ],
@@ -1124,10 +1288,10 @@ class _ItemFormState extends State<_ItemForm> {
                       : const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.restaurant_menu_rounded, size: 30, color: Color(0xFFFF5722)),
+                            Icon(Icons.add_a_photo_outlined, size: 30, color: Color(0xFFFF5722)),
                             SizedBox(height: 4),
                             Text(
-                              'Add Photo',
+                              'Set Photo',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -1159,18 +1323,88 @@ class _ItemFormState extends State<_ItemForm> {
               onChanged: (v) => setState(() => _selectedCategoryId = v),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _priceController,
-              decoration: _inputDecoration('Selling Price ₹ *', prefix: '₹ '),
-              keyboardType: TextInputType.number,
+
+            // Selling Price & Cost Price side-by-side
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _priceController,
+                    decoration: _inputDecoration('Selling Price ₹ *', prefix: '₹ '),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _costPriceController,
+                    decoration: _inputDecoration('Cost Price ₹', prefix: '₹ '),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
+
+            // Low stock threshold & Prep qty side-by-side
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _lowStockController,
+                    decoration: _inputDecoration('Low Stock Alert Qty'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _prepQtyController,
+                    decoration: _inputDecoration('Default Prep Qty'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Best Seller Switch Box
+            Container(
+              decoration: BoxDecoration(
+                color: _isBestSeller ? const Color(0xFFFEF3C7) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isBestSeller ? const Color(0xFFF59E0B) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: SwitchListTile.adaptive(
+                value: _isBestSeller,
+                title: const Text(
+                  'Best Seller Item',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text(
+                  'Highlight this item in Best Sellers tab',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                secondary: Icon(
+                  Icons.star_rounded,
+                  color: _isBestSeller ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8),
+                  size: 26,
+                ),
+                activeColor: const Color(0xFFD97706),
+                onChanged: (v) => setState(() => _isBestSeller = v),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             TextField(
               controller: _descController,
               decoration: _inputDecoration('Description (Optional)'),
               maxLines: 2,
             ),
             const SizedBox(height: 20),
+
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -1183,8 +1417,13 @@ class _ItemFormState extends State<_ItemForm> {
                     categoryId: Value(_selectedCategoryId!),
                     name: Value(_nameController.text.trim()),
                     sellingPrice: Value(double.tryParse(_priceController.text) ?? 0),
+                    costPrice: Value(double.tryParse(_costPriceController.text) ?? 0),
+                    lowStockThreshold: Value(int.tryParse(_lowStockController.text) ?? 5),
+                    defaultPrepQty: Value(int.tryParse(_prepQtyController.text) ?? 0),
                     description: Value(_descController.text),
                     imageUrl: Value(_imagePath),
+                    isBestSeller: Value(_isBestSeller),
+                    bestSellerRank: Value(_isBestSeller ? (_bestSellerRank ?? 99) : null),
                   );
                   if (isEdit) {
                     context.read<MenuProvider>().updateItem(widget.item!.id, companion);

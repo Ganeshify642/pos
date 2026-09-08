@@ -68,7 +68,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final db = context.read<AppDatabase>();
-      await MockDataService.loadVadapavMockData(db);
+      final lang = context.read<SettingsProvider>().menuLanguage;
+      await MockDataService.loadVadapavMockData(db, language: lang);
 
       if (mounted) {
         await context.read<SettingsProvider>().loadSettings();
@@ -167,6 +168,172 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } finally {
       if (mounted) setState(() => _loadingMockData = false);
+    }
+  }
+
+  String _getLanguageName(String code) {
+    switch (code) {
+      case 'gu':
+        return 'ગુજરાતી (Gujarati)';
+      case 'hi':
+        return 'हिंदी (Hindi)';
+      case 'en':
+      default:
+        return 'English';
+    }
+  }
+
+  void _showLanguageDialog(BuildContext context, SettingsProvider settings) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Menu Language',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Menu categories and items will automatically update to your chosen language.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              _buildLanguageOption(
+                ctx,
+                code: 'en',
+                title: 'English',
+                subtitle: 'Vadapav, Butter Vadapav, Chutney...',
+                isSelected: settings.menuLanguage == 'en',
+              ),
+              const SizedBox(height: 8),
+              _buildLanguageOption(
+                ctx,
+                code: 'hi',
+                title: 'हिंदी (Hindi)',
+                subtitle: 'वड़ापाव, अमुल बटर वड़ापाव, चटनी...',
+                isSelected: settings.menuLanguage == 'hi',
+              ),
+              const SizedBox(height: 8),
+              _buildLanguageOption(
+                ctx,
+                code: 'gu',
+                title: 'ગુજરાતી (Gujarati)',
+                subtitle: 'વડાપાંઉ, અમુલ બટર વડાપાંઉ, ચટણી...',
+                isSelected: settings.menuLanguage == 'gu',
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext sheetContext, {
+    required String code,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+  }) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(sheetContext);
+        _changeLanguage(code);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFF0ED) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.8 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  code.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? AppColors.primary : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changeLanguage(String langCode) async {
+    final settings = context.read<SettingsProvider>();
+    final db = context.read<AppDatabase>();
+    final menu = context.read<MenuProvider>();
+
+    await settings.setMenuLanguage(langCode);
+    await MockDataService.updateMenuLanguage(db, langCode);
+    if (mounted) {
+      await menu.loadAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Menu language changed to ${_getLanguageName(langCode)}'),
+          backgroundColor: AppColors.inStock,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -310,6 +477,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── LANGUAGE SELECTION ────────────────────────────────────
+          _sectionLabel('LANGUAGE / ભાષા / भाषा'),
+          _GroupedCard(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                leading: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.translate_rounded, color: Color(0xFF2563EB), size: 20),
+                ),
+                title: const Text(
+                  'Menu Language',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                ),
+                subtitle: Text(
+                  _getLanguageName(settings.menuLanguage),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        settings.menuLanguage.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                  ],
+                ),
+                onTap: () => _showLanguageDialog(context, settings),
               ),
             ],
           ),

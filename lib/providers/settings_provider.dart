@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../data/database/app_database.dart';
 import '../data/db_types.dart';
 import '../data/repositories/settings_repository.dart';
 import '../utils/constants.dart';
@@ -22,6 +21,9 @@ class SettingsProvider extends ChangeNotifier {
   // Order Modes Toggle
   bool _orderModesEnabled = false;
 
+  // Menu Language Selection ('en', 'gu', 'hi')
+  String _menuLanguage = 'en';
+
   SettingsProvider(this._repo) {
     _loadPrefs();
   }
@@ -34,6 +36,7 @@ class SettingsProvider extends ChangeNotifier {
   String? get error => _error;
   ThemeMode get themeMode => _themeMode;
   bool get orderModesEnabled => _orderModesEnabled;
+  String get menuLanguage => _menuLanguage;
 
   String get businessName =>
       _businessSettings?.businessName ?? AppConstants.appName;
@@ -145,6 +148,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     _orderModesEnabled = prefs.getBool('orderModesEnabled') ?? false;
+    _menuLanguage = prefs.getString('menuLanguage') ?? 'en';
     notifyListeners();
   }
 
@@ -153,5 +157,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('orderModesEnabled', value);
+  }
+
+  Future<void> setMenuLanguage(String value) async {
+    _menuLanguage = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('menuLanguage', value);
   }
 }
