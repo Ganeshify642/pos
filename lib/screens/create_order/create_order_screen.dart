@@ -145,7 +145,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width >= 720;
+    final isTablet = MediaQuery.of(context).size.width >= 700;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -479,11 +479,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           await MockDataService.loadVadapavMockData(db, language: lang);
           if (context.mounted) {
             await context.read<SettingsProvider>().loadSettings();
-            if (context.mounted) await context.read<MenuProvider>().loadAll();
-            if (context.mounted)
+            if (context.mounted) {
+              await context.read<MenuProvider>().loadAll();
+            }
+            if (context.mounted) {
               await context.read<InventoryProvider>().loadInventoryStatus();
-            if (context.mounted)
+            }
+            if (context.mounted) {
               await context.read<OrderProvider>().loadOrders();
+            }
           }
         },
       );
@@ -501,16 +505,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final crossAxisCount = width >= 500 ? 3 : 2;
-        final childAspectRatio = width >= 500 ? 0.72 : 0.74;
+        final isTablet = MediaQuery.of(context).size.width >= 700;
+        final crossAxisCount = (isTablet || width >= 500) ? 4 : 2;
+        final childAspectRatio = (isTablet || width >= 500) ? 0.70 : 0.74;
 
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
+            crossAxisSpacing: (isTablet || width >= 500) ? 10 : 14,
+            mainAxisSpacing: (isTablet || width >= 500) ? 10 : 14,
           ),
           itemCount: items.length,
           itemBuilder: (ctx, idx) {
@@ -1209,14 +1214,19 @@ class ProductGridCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        AppFormatters.currency(item.sellingPrice),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFFF4500),
+                      Expanded(
+                        child: Text(
+                          AppFormatters.currency(item.sellingPrice),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFFF4500),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 4),
                       if (quantity == 0)
                         InkWell(
                           onTap: onAdd,
@@ -1259,7 +1269,7 @@ class ProductGridCard extends StatelessWidget {
                           InkWell(
                             onTap: onRemove,
                             child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              padding: EdgeInsets.symmetric(horizontal: 6),
                               child: Icon(
                                 Icons.remove,
                                 color: Color(0xFFFF4500),
@@ -1271,7 +1281,7 @@ class ProductGridCard extends StatelessWidget {
                             onTap: onSetQuantity,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                  horizontal: 4, vertical: 2),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -1296,7 +1306,7 @@ class ProductGridCard extends StatelessWidget {
                           InkWell(
                             onTap: onAdd,
                             child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              padding: EdgeInsets.symmetric(horizontal: 6),
                               child: Icon(
                                 Icons.add,
                                 color: Color(0xFFFF4500),
