@@ -146,6 +146,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width >= 700;
+    final settings = context.watch<SettingsProvider>();
+    final showSideCart = isTablet && settings.showSideCartPanel;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -183,7 +185,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
         ],
       ),
-      body: isTablet
+      body: showSideCart
           ? Row(
               children: [
                 Expanded(

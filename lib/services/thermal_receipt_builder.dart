@@ -48,7 +48,7 @@ class ThermalReceiptBuilder {
     }
 
     // Feed & cut
-    bytes.addAll(generator.feed(2));
+    bytes.addAll(generator.feed(1));
     bytes.addAll(generator.cut());
 
     return bytes;
@@ -75,7 +75,7 @@ class ThermalReceiptBuilder {
       bytes.addAll(generator.imageRaster(testImage));
     }
 
-    bytes.addAll(generator.feed(2));
+    bytes.addAll(generator.feed(1));
     bytes.addAll(generator.cut());
 
     return bytes;
@@ -161,7 +161,7 @@ class ThermalReceiptBuilder {
     required TaxSetting taxSettings,
     required bool is80mm,
   }) {
-    double y = 14.0;
+    double y = 4.0;
 
     final bName = business.businessName.isNotEmpty
         ? business.businessName
@@ -170,7 +170,7 @@ class ThermalReceiptBuilder {
     // ── 1. BUSINESS HEADER ──
     final bNameTp = _createTextPainter(
       text: bName.toUpperCase(),
-      fontSize: is80mm ? 54.5 : 43.5,
+      fontSize: 39.0,
       bold: true,
       align: TextAlign.center,
       maxWidth: contentWidth,
@@ -181,12 +181,12 @@ class ThermalReceiptBuilder {
         Offset(padding + (contentWidth - bNameTp.width) / 2, y),
       );
     }
-    y += bNameTp.height + 5;
+    y += bNameTp.height + 4;
 
     if (business.phone.isNotEmpty) {
       final phoneTp = _createTextPainter(
         text: 'Ph: ${business.phone}',
-        fontSize: is80mm ? 32 : 26,
+        fontSize: 23.5,
         align: TextAlign.center,
         maxWidth: contentWidth,
       );
@@ -202,7 +202,7 @@ class ThermalReceiptBuilder {
     if (business.address.isNotEmpty) {
       final addrTp = _createTextPainter(
         text: business.address,
-        fontSize: is80mm ? 30.5 : 25,
+        fontSize: 22.5,
         align: TextAlign.center,
         maxWidth: contentWidth,
       );
@@ -218,7 +218,7 @@ class ThermalReceiptBuilder {
     if (business.gstId.isNotEmpty) {
       final gstTp = _createTextPainter(
         text: 'GSTIN: ${business.gstId}',
-        fontSize: is80mm ? 30.5 : 25,
+        fontSize: 22.5,
         bold: true,
         align: TextAlign.center,
         maxWidth: contentWidth,
@@ -233,14 +233,14 @@ class ThermalReceiptBuilder {
     }
 
     // Double divider
-    y += 6;
+    y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
-    y += 8;
+    y += 4;
 
     // ── 2. ORDER DETAILS ──
     final orderNumTp = _createTextPainter(
       text: 'Order: #${order.orderNumber}',
-      fontSize: is80mm ? 33.5 : 28.0,
+      fontSize: 25.0,
       bold: true,
       maxWidth: contentWidth,
     );
@@ -251,35 +251,51 @@ class ThermalReceiptBuilder {
 
     final dateTp = _createTextPainter(
       text: 'Date: ${_dtFmt.format(order.createdAt)}',
-      fontSize: is80mm ? 27.0 : 23.5,
+      fontSize: 21.0,
       bold: true,
       maxWidth: contentWidth,
     );
     if (canvas != null) {
       dateTp.paint(canvas, Offset(padding, y));
     }
-    y += dateTp.height + 4;
+    y += dateTp.height + 3;
 
     final String custPhoneText =
         (order.customerPhone != null && order.customerPhone!.isNotEmpty)
             ? 'Ph: ${order.customerPhone}'
             : '';
 
-    y = _drawRow(
-      canvas: canvas,
-      padding: padding,
-      y: y,
-      contentWidth: contentWidth,
-      leftText: 'Source: ${_sourceDisplay(order)}',
-      rightText: custPhoneText,
-      fontSize: is80mm ? 32 : 25.5,
-    );
+    final bool isStaff = order.orderSource == AppConstants.sourceStaff ||
+        order.orderSource.toLowerCase() == 'staff';
+
+    // Only print source if Staff is selected, to save paper
+    if (isStaff) {
+      y = _drawRow(
+        canvas: canvas,
+        padding: padding,
+        y: y,
+        contentWidth: contentWidth,
+        leftText: 'Source: Staff',
+        rightText: custPhoneText,
+        fontSize: 23.0,
+      );
+    } else if (custPhoneText.isNotEmpty) {
+      final phoneTp = _createTextPainter(
+        text: custPhoneText,
+        fontSize: 23.0,
+        maxWidth: contentWidth,
+      );
+      if (canvas != null) {
+        phoneTp.paint(canvas, Offset(padding, y));
+      }
+      y += phoneTp.height + 3;
+    }
 
     if (order.deliveryAppOrderId != null &&
         order.deliveryAppOrderId!.isNotEmpty) {
       final appOrderTp = _createTextPainter(
         text: 'App Order ID: ${order.deliveryAppOrderId}',
-        fontSize: is80mm ? 32 : 25.5,
+        fontSize: 23.0,
         maxWidth: contentWidth,
       );
       if (canvas != null) {
@@ -291,31 +307,31 @@ class ThermalReceiptBuilder {
     if (order.deliveryAddress != null && order.deliveryAddress!.isNotEmpty) {
       final addrTp = _createTextPainter(
         text: 'Address: ${order.deliveryAddress}',
-        fontSize: is80mm ? 29 : 24,
+        fontSize: 21.5,
         maxWidth: contentWidth,
       );
       if (canvas != null) {
         addrTp.paint(canvas, Offset(padding, y));
       }
-      y += addrTp.height + 4;
+      y += addrTp.height + 3;
     }
 
     // Divider
-    y += 5;
+    y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 8;
+    y += 4;
 
     // ── 3. ITEMS TABLE HEADER ──
     final double itemColWidth =
         is80mm ? contentWidth * 0.44 : contentWidth * 0.42;
     final double qtyColWidth =
-        is80mm ? contentWidth * 0.12 : contentWidth * 0.13;
+        is80mm ? contentWidth * 0.14 : contentWidth * 0.13;
     final double priceColWidth =
-        is80mm ? contentWidth * 0.22 : contentWidth * 0.225;
+        is80mm ? contentWidth * 0.21 : contentWidth * 0.225;
     final double totalColWidth =
-        is80mm ? contentWidth * 0.22 : contentWidth * 0.225;
+        is80mm ? contentWidth * 0.21 : contentWidth * 0.225;
 
-    final headerFontSize = is80mm ? 32.0 : 27.0;
+    const headerFontSize = 24.0;
 
     final headerItemTp = _createTextPainter(
       text: 'Item',
@@ -364,13 +380,13 @@ class ThermalReceiptBuilder {
         Offset(curX + (totalColWidth - headerTotalTp.width), y),
       );
     }
-    y += headerItemTp.height + 5;
+    y += headerItemTp.height + 3;
 
     y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 6;
+    y += 4;
 
     // ── 4. ITEMS LIST ──
-    final itemFontSize = is80mm ? 32.0 : 26.0;
+    const itemFontSize = 23.5;
 
     for (final item in items) {
       final lineTotalStr = _fmt(item.quantity * item.priceAtOrder);
@@ -427,211 +443,148 @@ class ThermalReceiptBuilder {
           Offset(curX + (totalColWidth - totalTp.width), y),
         );
       }
-      y += rowHeight + 4;
+      y += rowHeight + 3;
 
       if (item.specialInstructions.isNotEmpty) {
         final noteTp = _createTextPainter(
           text: ' * ${item.specialInstructions}',
-          fontSize: is80mm ? 25 : 21.5,
+          fontSize: 19.5,
           italic: true,
           maxWidth: contentWidth - 8,
         );
         if (canvas != null) {
           noteTp.paint(canvas, Offset(padding + 8, y));
         }
-        y += noteTp.height + 3;
+        y += noteTp.height + 2;
       }
+    }
+
+    y += 2;
+    y = _drawDivider(canvas, padding, y, contentWidth);
+    y += 4;
+
+    // ── 5. BILLING SUMMARY ──
+    const summaryFontSize = 23.5;
+
+    // Tax Information (SGST & CGST / IGST)
+    if (taxSettings.taxEnabled || order.taxAmount > 0) {
+      if (taxSettings.taxMode == AppConstants.taxModeSplit ||
+          order.sgstAmount > 0 ||
+          order.cgstAmount > 0) {
+        final sgstPct = taxSettings.sgstPct > 0 ? taxSettings.sgstPct : 2.5;
+        final cgstPct = taxSettings.cgstPct > 0 ? taxSettings.cgstPct : 2.5;
+        final sgstVal = order.sgstAmount > 0
+            ? order.sgstAmount
+            : (order.taxAmount > 0 ? order.taxAmount / 2 : 0.0);
+        final cgstVal = order.cgstAmount > 0
+            ? order.cgstAmount
+            : (order.taxAmount > 0 ? order.taxAmount / 2 : 0.0);
+        y = _drawRow(
+          canvas: canvas,
+          padding: padding,
+          y: y,
+          contentWidth: contentWidth,
+          leftText: 'SGST ($sgstPct%)',
+          rightText: _fmt(sgstVal),
+          fontSize: summaryFontSize,
+        );
+        y = _drawRow(
+          canvas: canvas,
+          padding: padding,
+          y: y,
+          contentWidth: contentWidth,
+          leftText: 'CGST ($cgstPct%)',
+          rightText: _fmt(cgstVal),
+          fontSize: summaryFontSize,
+        );
+      } else {
+        final gstPct = taxSettings.igstPct > 0 ? taxSettings.igstPct : 5.0;
+        y = _drawRow(
+          canvas: canvas,
+          padding: padding,
+          y: y,
+          contentWidth: contentWidth,
+          leftText: 'GST ($gstPct%)',
+          rightText: _fmt(order.taxAmount),
+          fontSize: summaryFontSize,
+        );
+      }
+    }
+
+    if (order.discountAmount > 0) {
+      y = _drawRow(
+        canvas: canvas,
+        padding: padding,
+        y: y,
+        contentWidth: contentWidth,
+        leftText: 'Discount',
+        rightText: '-${_fmt(order.discountAmount)}',
+        fontSize: summaryFontSize,
+      );
+    }
+
+    if (order.deliveryFee > 0) {
+      y = _drawRow(
+        canvas: canvas,
+        padding: padding,
+        y: y,
+        contentWidth: contentWidth,
+        leftText: 'Delivery Fee',
+        rightText: _fmt(order.deliveryFee),
+        fontSize: summaryFontSize,
+      );
     }
 
     y += 3;
-    y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 8;
+    y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
+    y += 4;
 
-    // ── 5. BILLING SUMMARY ──
-    final isDelivery = order.orderSource != AppConstants.sourceOffline;
-    final summaryFontSize = is80mm ? 32.0 : 26.0;
+    // TOTAL AMOUNT (Large & Bold)
+    final double totalToDisplay =
+        order.finalTotal > 0 ? order.finalTotal : order.grossAmount;
 
-    if (!isDelivery) {
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'Subtotal',
-        rightText: _fmt(order.subtotal),
-        fontSize: summaryFontSize,
+    y = _drawRow(
+      canvas: canvas,
+      padding: padding,
+      y: y,
+      contentWidth: contentWidth,
+      leftText: 'TOTAL AMOUNT:',
+      rightText: _fmt(totalToDisplay),
+      fontSize: 24.0,
+      leftBold: true,
+      rightBold: true,
+    );
+
+    final isDelivery = order.orderSource != AppConstants.sourceOffline &&
+        order.orderSource != AppConstants.sourceStaff;
+
+    final String paymentText = isDelivery
+        ? 'Status: PAID (via ${_sourceDisplay(order)})'
+        : 'Payment: ${order.paymentMethod.toUpperCase()} (${order.paymentStatus})';
+
+    final payTp = _createTextPainter(
+      text: paymentText,
+      fontSize: 22.5,
+      bold: true,
+      align: TextAlign.center,
+      maxWidth: contentWidth,
+    );
+    if (canvas != null) {
+      payTp.paint(
+        canvas,
+        Offset(padding + (contentWidth - payTp.width) / 2, y),
       );
-
-      if (taxSettings.taxEnabled) {
-        if (taxSettings.taxMode == AppConstants.taxModeSplit) {
-          y = _drawRow(
-            canvas: canvas,
-            padding: padding,
-            y: y,
-            contentWidth: contentWidth,
-            leftText: 'SGST (${taxSettings.sgstPct}%)',
-            rightText: _fmt(order.sgstAmount),
-            fontSize: summaryFontSize,
-          );
-          y = _drawRow(
-            canvas: canvas,
-            padding: padding,
-            y: y,
-            contentWidth: contentWidth,
-            leftText: 'CGST (${taxSettings.cgstPct}%)',
-            rightText: _fmt(order.cgstAmount),
-            fontSize: summaryFontSize,
-          );
-        } else {
-          y = _drawRow(
-            canvas: canvas,
-            padding: padding,
-            y: y,
-            contentWidth: contentWidth,
-            leftText: 'IGST (${taxSettings.igstPct}%)',
-            rightText: _fmt(order.taxAmount),
-            fontSize: summaryFontSize,
-          );
-        }
-      }
-
-      if (order.discountAmount > 0) {
-        y = _drawRow(
-          canvas: canvas,
-          padding: padding,
-          y: y,
-          contentWidth: contentWidth,
-          leftText: 'Discount',
-          rightText: '-${_fmt(order.discountAmount)}',
-          fontSize: summaryFontSize,
-        );
-      }
-
-      if (order.deliveryFee > 0) {
-        y = _drawRow(
-          canvas: canvas,
-          padding: padding,
-          y: y,
-          contentWidth: contentWidth,
-          leftText: 'Delivery Fee',
-          rightText: _fmt(order.deliveryFee),
-          fontSize: summaryFontSize,
-        );
-      }
-
-      y += 5;
-      y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
-      y += 8;
-
-      // TOTAL AMOUNT (Large & Bold)
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'TOTAL AMOUNT:',
-        rightText: _fmt(order.finalTotal),
-        fontSize: is80mm ? 33.5 : 26,
-        leftBold: true,
-        rightBold: true,
-      );
-
-      final payTp = _createTextPainter(
-        text:
-            'Payment: ${order.paymentMethod.toUpperCase()} (${order.paymentStatus})',
-        fontSize: is80mm ? 29.5 : 25,
-        bold: true,
-        align: TextAlign.center,
-        maxWidth: contentWidth,
-      );
-      if (canvas != null) {
-        payTp.paint(
-          canvas,
-          Offset(padding + (contentWidth - payTp.width) / 2, y),
-        );
-      }
-      y += payTp.height + 5;
-    } else {
-      // Aggregator / Delivery Order
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'Item Subtotal',
-        rightText: _fmt(order.subtotal),
-        fontSize: summaryFontSize,
-      );
-      if (order.deliveryFee > 0) {
-        y = _drawRow(
-          canvas: canvas,
-          padding: padding,
-          y: y,
-          contentWidth: contentWidth,
-          leftText: 'Delivery Fee',
-          rightText: _fmt(order.deliveryFee),
-          fontSize: summaryFontSize,
-        );
-      }
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'Gross Amount',
-        rightText: _fmt(order.grossAmount),
-        fontSize: summaryFontSize,
-      );
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'Platform Fee (Commission)',
-        rightText: '-${_fmt(order.platformFee)}',
-        fontSize: summaryFontSize,
-      );
-
-      y += 5;
-      y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
-      y += 8;
-
-      y = _drawRow(
-        canvas: canvas,
-        padding: padding,
-        y: y,
-        contentWidth: contentWidth,
-        leftText: 'YOUR NET EARNINGS:',
-        rightText: _fmt(order.netEarnings),
-        fontSize: is80mm ? 43.5 : 36,
-        leftBold: true,
-        rightBold: true,
-      );
-
-      final statusTp = _createTextPainter(
-        text: 'Status: PAID (via ${_sourceDisplay(order)})',
-        fontSize: is80mm ? 29.5 : 25,
-        bold: true,
-        align: TextAlign.center,
-        maxWidth: contentWidth,
-      );
-      if (canvas != null) {
-        statusTp.paint(
-          canvas,
-          Offset(padding + (contentWidth - statusTp.width) / 2, y),
-        );
-      }
-      y += statusTp.height + 5;
     }
+    y += payTp.height + 4;
 
-    y += 5;
+    y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 10;
+    y += 5;
 
     // ── 6. FOOTER ──
     final thankTp = _createTextPainter(
       text: 'Thank you for your order!',
-      fontSize: is80mm ? 32 : 27,
+      fontSize: 24.0,
       bold: true,
       align: TextAlign.center,
       maxWidth: contentWidth,
@@ -642,36 +595,7 @@ class ThermalReceiptBuilder {
         Offset(padding + (contentWidth - thankTp.width) / 2, y),
       );
     }
-    y += thankTp.height + 4;
-
-    final refTp = _createTextPainter(
-      text: 'Order Ref: #${order.orderNumber}',
-      fontSize: is80mm ? 27 : 23.5,
-      align: TextAlign.center,
-      maxWidth: contentWidth,
-    );
-    if (canvas != null) {
-      refTp.paint(
-        canvas,
-        Offset(padding + (contentWidth - refTp.width) / 2, y),
-      );
-    }
-    y += refTp.height + 3;
-
-    final powerTp = _createTextPainter(
-      text: 'Powered by ${AppConstants.appName}',
-      fontSize: is80mm ? 23.5 : 20.5,
-      italic: true,
-      align: TextAlign.center,
-      maxWidth: contentWidth,
-    );
-    if (canvas != null) {
-      powerTp.paint(
-        canvas,
-        Offset(padding + (contentWidth - powerTp.width) / 2, y),
-      );
-    }
-    y += powerTp.height + 18; // bottom margin
+    y += thankTp.height + 4; // bottom margin
 
     return y;
   }
@@ -740,7 +664,7 @@ class ThermalReceiptBuilder {
     required BusinessSetting business,
     required bool is80mm,
   }) {
-    double y = 14.0;
+    double y = 4.0;
 
     final bName = business.businessName.isNotEmpty
         ? business.businessName
@@ -748,7 +672,7 @@ class ThermalReceiptBuilder {
 
     final bNameTp = _createTextPainter(
       text: bName.toUpperCase(),
-      fontSize: is80mm ? 54.5 : 43.5,
+      fontSize: 39.0,
       bold: true,
       align: TextAlign.center,
       maxWidth: contentWidth,
@@ -759,11 +683,11 @@ class ThermalReceiptBuilder {
         Offset(padding + (contentWidth - bNameTp.width) / 2, y),
       );
     }
-    y += bNameTp.height + 5;
+    y += bNameTp.height + 4;
 
     final testHeaderTp = _createTextPainter(
       text: '*** PRINTER TEST ***',
-      fontSize: is80mm ? 33.5 : 29,
+      fontSize: 26.0,
       bold: true,
       align: TextAlign.center,
       maxWidth: contentWidth,
@@ -774,14 +698,15 @@ class ThermalReceiptBuilder {
         Offset(padding + (contentWidth - testHeaderTp.width) / 2, y),
       );
     }
-    y += testHeaderTp.height + 6;
+    y += testHeaderTp.height + 4;
 
+    y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
-    y += 6;
+    y += 4;
 
     final msgTp = _createTextPainter(
       text: 'Bluetooth Thermal Printer connected successfully!',
-      fontSize: is80mm ? 30.5 : 25,
+      fontSize: 22.5,
       align: TextAlign.center,
       maxWidth: contentWidth,
     );
@@ -791,7 +716,7 @@ class ThermalReceiptBuilder {
         Offset(padding + (contentWidth - msgTp.width) / 2, y),
       );
     }
-    y += msgTp.height + 4;
+    y += msgTp.height + 3;
 
     y = _drawRow(
       canvas: canvas,
@@ -800,34 +725,34 @@ class ThermalReceiptBuilder {
       contentWidth: contentWidth,
       leftText: 'Paper Size:',
       rightText: is80mm ? '80mm (Wide)' : '58mm (Standard)',
-      fontSize: is80mm ? 30.5 : 25,
+      fontSize: 22.5,
       rightBold: true,
     );
 
     final testDateTp = _createTextPainter(
       text: 'Date: ${_dtFmt.format(DateTime.now())}',
-      fontSize: is80mm ? 29.5 : 24.5,
+      fontSize: 21.0,
       maxWidth: contentWidth,
     );
     if (canvas != null) {
       testDateTp.paint(canvas, Offset(padding, y));
     }
-    y += testDateTp.height + 4;
+    y += testDateTp.height + 3;
 
-    y += 5;
+    y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 6;
+    y += 4;
 
     final double itemColWidth =
         is80mm ? contentWidth * 0.44 : contentWidth * 0.42;
     final double qtyColWidth =
-        is80mm ? contentWidth * 0.12 : contentWidth * 0.13;
+        is80mm ? contentWidth * 0.14 : contentWidth * 0.13;
     final double priceColWidth =
-        is80mm ? contentWidth * 0.22 : contentWidth * 0.225;
+        is80mm ? contentWidth * 0.21 : contentWidth * 0.225;
     final double totalColWidth =
-        is80mm ? contentWidth * 0.22 : contentWidth * 0.225;
-    final headerFontSize = is80mm ? 25.0 : 22.0;
-    final itemFontSize = is80mm ? 25.0 : 22.0;
+        is80mm ? contentWidth * 0.21 : contentWidth * 0.225;
+    const headerFontSize = 20.0;
+    const itemFontSize = 20.0;
 
     final hItemTp = _createTextPainter(
       text: 'ITEM',
@@ -869,9 +794,9 @@ class ThermalReceiptBuilder {
       hTotalTp.paint(
           canvas, Offset(curX + (totalColWidth - hTotalTp.width), y));
     }
-    y += hItemTp.height + 5;
+    y += hItemTp.height + 3;
     y = _drawDivider(canvas, padding, y, contentWidth);
-    y += 6;
+    y += 4;
 
     final testItems = [
       {
@@ -934,12 +859,12 @@ class ThermalReceiptBuilder {
         totalTp.paint(
             canvas, Offset(curX + (totalColWidth - totalTp.width), y));
       }
-      y += rowHeight + 4;
+      y += rowHeight + 3;
     }
 
-    y += 5;
+    y += 2;
     y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);
-    y += 8;
+    y += 4;
 
     y = _drawRow(
       canvas: canvas,
@@ -948,12 +873,12 @@ class ThermalReceiptBuilder {
       contentWidth: contentWidth,
       leftText: 'TEST TOTAL:',
       rightText: '₹75.00',
-      fontSize: is80mm ? 42 : 34,
+      fontSize: 30.5,
       leftBold: true,
       rightBold: true,
     );
 
-    y += 18;
+    y += 4;
     return y;
   }
 

@@ -24,6 +24,9 @@ class SettingsProvider extends ChangeNotifier {
   // Menu Language Selection ('en', 'gu', 'hi')
   String _menuLanguage = 'en';
 
+  // Side Cart Panel on Sell Screen (Disabled by default)
+  bool _showSideCartPanel = false;
+
   SettingsProvider(this._repo) {
     _loadPrefs();
   }
@@ -37,6 +40,7 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   bool get orderModesEnabled => _orderModesEnabled;
   String get menuLanguage => _menuLanguage;
+  bool get showSideCartPanel => _showSideCartPanel;
 
   String get businessName =>
       _businessSettings?.businessName ?? AppConstants.appName;
@@ -149,6 +153,7 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _orderModesEnabled = prefs.getBool('orderModesEnabled') ?? false;
     _menuLanguage = prefs.getString('menuLanguage') ?? 'en';
+    _showSideCartPanel = prefs.getBool('showSideCartPanel') ?? false;
     notifyListeners();
   }
 
@@ -164,5 +169,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('menuLanguage', value);
+  }
+
+  Future<void> setShowSideCartPanel(bool value) async {
+    _showSideCartPanel = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('showSideCartPanel', value);
   }
 }

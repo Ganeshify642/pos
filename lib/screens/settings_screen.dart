@@ -558,6 +558,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
+          // ── DISPLAY & CART LAYOUT ──────────────────────────────────
+          _sectionLabel('DISPLAY & CART LAYOUT'),
+          _GroupedCard(
+            children: [
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                value: settings.showSideCartPanel,
+                onChanged: (v) => settings.setShowSideCartPanel(v),
+                activeTrackColor: AppColors.primary,
+                title: const Text(
+                  'Side Cart Panel (Sell Screen)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                ),
+                subtitle: const Text(
+                  'Show selected items panel on the right side of the sell screen',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
           // ── TAX SETTINGS ───────────────────────────────────────────
           _sectionLabel('TAX CONFIGURATION'),
           _GroupedCard(
