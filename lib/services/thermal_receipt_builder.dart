@@ -995,4 +995,24 @@ class ThermalReceiptBuilder {
     }
     return order.orderSource;
   }
+
+  /// Builds ESC/POS pulse kick command bytes for triggering an electronic cash drawer
+  /// connected to the thermal printer DK (RJ11/RJ12) port.
+  ///
+  /// - [pin] == 2: Sends pulse to Pin 2 (Primary: `ESC p 0 25 250` -> `[27, 112, 0, 25, 250]`)
+  /// - [pin] == 5: Sends pulse to Pin 5 (Alternative: `ESC p 1 25 250` -> `[27, 112, 1, 25, 250]`)
+  /// - [pin] == null: Sends both Pin 2 and Pin 5 pulses in sequence for universal drawer compatibility.
+  static List<int> buildCashDrawerKickBytes({int? pin}) {
+    if (pin == 2) {
+      return const [27, 112, 0, 25, 250];
+    } else if (pin == 5) {
+      return const [27, 112, 1, 25, 250];
+    }
+    // Universal sequence: Pin 2 kick followed immediately by Pin 5 kick
+    return const [
+      27, 112, 0, 25, 250, // Pin 2 kick pulse (t1=50ms, t2=500ms)
+      27, 112, 1, 25, 250, // Pin 5 kick pulse (t1=50ms, t2=500ms)
+    ];
+  }
 }
+

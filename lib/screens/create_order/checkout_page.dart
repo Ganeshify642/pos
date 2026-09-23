@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/order_provider.dart';
+import '../../providers/printer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/calculation_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/constants.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/printer_dialog.dart';
 
 class CheckoutPage extends StatefulWidget {
   final VoidCallback onBack;
@@ -47,6 +49,37 @@ class _CheckoutPageState extends State<CheckoutPage> {
     setState(() => _submitting = true);
     await widget.onSubmit();
     if (mounted) setState(() => _submitting = false);
+  }
+
+  Future<void> _handleOpenDrawer() async {
+    final printer = context.read<PrinterProvider>();
+    if (!printer.isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              'Printer not connected. Connect printer to open cash drawer.'),
+          action: SnackBarAction(
+            label: 'Connect',
+            onPressed: () => PrinterDialog.show(context),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final ok = await printer.openCashDrawer();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Cash drawer kick signal sent successfully!'
+                : (printer.errorMessage ?? 'Failed to open cash drawer.'),
+          ),
+          backgroundColor: ok ? AppColors.inStock : Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -304,7 +337,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                     )
                   else ...[
-                    Text('Payment Method', style: theme.textTheme.titleSmall),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Payment Method', style: theme.textTheme.titleSmall),
+                        TextButton.icon(
+                          onPressed: _handleOpenDrawer,
+                          icon: const Icon(Icons.point_of_sale_rounded, size: 16),
+                          label: const Text('Open Drawer',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -401,7 +451,7 @@ class _SummaryRow extends StatelessWidget {
               fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
               color: bold
                   ? null
-                  : theme.colorScheme.onSurface.withOpacity(0.7),
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           Text(

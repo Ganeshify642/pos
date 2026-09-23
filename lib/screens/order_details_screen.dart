@@ -90,6 +90,28 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     }
   }
 
+  Future<void> _openCashDrawer() async {
+    final printer = context.read<PrinterProvider>();
+    if (!printer.isConnected) {
+      await PrinterDialog.show(context);
+      return;
+    }
+
+    final ok = await printer.openCashDrawer();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Cash drawer kick signal sent successfully!'
+                : (printer.errorMessage ?? 'Failed to open cash drawer.'),
+          ),
+          backgroundColor: ok ? AppColors.inStock : Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _updateStatus(String status) async {
     await context.read<OrderProvider>().updateOrderStatus(widget.orderId, status);
     await _load();
@@ -214,6 +236,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       appBar: AppBar(
         title: Text('Order #${order.orderNumber}'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.point_of_sale_outlined),
+            onPressed: _openCashDrawer,
+            tooltip: 'Open Cash Drawer',
+          ),
           IconButton(
             icon: const Icon(Icons.print_outlined),
             onPressed: _printThermal,

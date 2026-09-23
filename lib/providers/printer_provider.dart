@@ -15,6 +15,7 @@ class PrinterProvider extends ChangeNotifier {
   bool _isScanning = false;
   bool _isConnecting = false;
   bool _isPrinting = false;
+  bool _isOpeningDrawer = false;
   bool _isBluetoothEnabled = true;
   String? _statusMessage;
   String? _errorMessage;
@@ -38,6 +39,7 @@ class PrinterProvider extends ChangeNotifier {
   bool get isScanning => _isScanning;
   bool get isConnecting => _isConnecting;
   bool get isPrinting => _isPrinting;
+  bool get isOpeningDrawer => _isOpeningDrawer;
   bool get isBluetoothEnabled => _isBluetoothEnabled;
   String? get statusMessage => _statusMessage;
   String? get errorMessage => _errorMessage;
@@ -362,6 +364,58 @@ class PrinterProvider extends ChangeNotifier {
     } catch (e) {
       _isPrinting = false;
       _errorMessage = 'Test print error: $e';
+      _statusMessage = null;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Open electronic cash drawer connected to printer's RJ11/RJ12 DK port
+  Future<bool> openCashDrawer({int? pin}) async {
+    if (!_isConnected || _connectedPrinter == null) {
+      if (_savedPrinterMac != null) {
+        final connected = await _printerService.connect(_savedPrinterMac!);
+        if (connected) {
+          _isConnected = true;
+          _connectedPrinter = PrinterDevice(
+            name: _savedPrinterName ?? 'Thermal Printer',
+            macAddress: _savedPrinterMac!,
+          );
+        } else {
+          _errorMessage =
+              'Printer not connected. Please connect your printer first.';
+          notifyListeners();
+          return false;
+        }
+      } else {
+        _errorMessage =
+            'Printer not connected. Please connect your printer first.';
+        notifyListeners();
+        return false;
+      }
+    }
+
+    _isOpeningDrawer = true;
+    _errorMessage = null;
+    _statusMessage = 'Sending kick command to cash drawer...';
+    notifyListeners();
+
+    try {
+      final success = await _printerService.openCashDrawer(pin: pin);
+      _isOpeningDrawer = false;
+
+      if (success) {
+        _statusMessage = 'Cash drawer kick signal sent successfully!';
+      } else {
+        _errorMessage =
+            'Failed to open cash drawer. Check printer and cable connection.';
+      }
+
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _isOpeningDrawer = false;
+      _errorMessage = 'Cash drawer error: $e';
       _statusMessage = null;
       notifyListeners();
       return false;
