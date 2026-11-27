@@ -259,6 +259,7 @@ class PrinterDialog extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
                                 ),
                                 icon: printerProvider.isPrinting
                                     ? const SizedBox(
@@ -270,9 +271,63 @@ class PrinterDialog extends StatelessWidget {
                                         ),
                                       )
                                     : const Icon(Icons.receipt_long, size: 16),
-                                label: Text(printerProvider.isPrinting
-                                    ? 'Printing...'
-                                    : 'Print Test Receipt'),
+                                label: Text(
+                                  printerProvider.isPrinting
+                                      ? 'Printing...'
+                                      : 'Test Receipt',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: printerProvider.isOpeningDrawer
+                                    ? null
+                                    : () async {
+                                        final ok = await printerProvider
+                                            .openCashDrawer();
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                ok
+                                                    ? 'Cash drawer kick signal sent successfully!'
+                                                    : (printerProvider
+                                                            .errorMessage ??
+                                                        'Failed to open cash drawer'),
+                                              ),
+                                              backgroundColor: ok
+                                                  ? AppColors.inStock
+                                                  : Colors.red,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(
+                                      color: AppColors.primary),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                                icon: printerProvider.isOpeningDrawer
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.primary,
+                                        ),
+                                      )
+                                    : const Icon(Icons.point_of_sale_rounded,
+                                        size: 16),
+                                label: Text(
+                                  printerProvider.isOpeningDrawer
+                                      ? 'Opening...'
+                                      : 'Open Drawer',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
                               ),
                             ),
                           ],

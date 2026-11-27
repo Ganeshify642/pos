@@ -239,4 +239,31 @@ class PrinterService {
       return false;
     }
   }
+
+  /// Send ESC/POS pulse kick command bytes directly to the connected Bluetooth printer
+  /// to open an electronic cash drawer connected via the printer's DK port (RJ11/RJ12).
+  ///
+  /// - Primary (Pin 2): ESC p 0 25 250 -> [27, 112, 0, 25, 250]
+  /// - Fallback / Alternative (Pin 5): ESC p 1 25 250 -> [27, 112, 1, 25, 250]
+  /// - Default: Sends Pin 2 kick followed by Pin 5 kick for universal compatibility.
+  Future<bool> openCashDrawer({int? pin}) async {
+    try {
+      final List<int> kickBytes;
+      if (pin == 2) {
+        kickBytes = const [27, 112, 0, 25, 250];
+      } else if (pin == 5) {
+        kickBytes = const [27, 112, 1, 25, 250];
+      } else {
+        kickBytes = const [
+          27, 112, 0, 25, 250, // Pin 2 (primary)
+          27, 112, 1, 25, 250, // Pin 5 (fallback/alternative)
+        ];
+      }
+      return await printBytes(kickBytes);
+    } catch (e) {
+      debugPrint('Open cash drawer error: $e');
+      return false;
+    }
+  }
 }
+

@@ -203,6 +203,39 @@ class _InvoicePreviewScreenState extends State<InvoicePreviewScreen> {
               PrinterDialog.show(context);
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.point_of_sale_rounded, size: 20, color: Color(0xFF64748B)),
+            tooltip: 'Open Cash Drawer',
+            onPressed: () async {
+              _redirectTimer?.cancel();
+              if (!printer.isConnected) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                        'Printer not connected. Connect printer to open cash drawer.'),
+                    action: SnackBarAction(
+                      label: 'Connect',
+                      onPressed: () => PrinterDialog.show(context),
+                    ),
+                  ),
+                );
+                return;
+              }
+              final ok = await printer.openCashDrawer();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? 'Cash drawer kick signal sent successfully!'
+                          : (printer.errorMessage ?? 'Failed to open cash drawer.'),
+                    ),
+                    backgroundColor: ok ? AppColors.inStock : Colors.red,
+                  ),
+                );
+              }
+            },
+          ),
           if (path != null)
             IconButton(
               icon: _sharing
