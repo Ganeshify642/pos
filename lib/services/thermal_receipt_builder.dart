@@ -232,6 +232,24 @@ class ThermalReceiptBuilder {
       y += gstTp.height + 3;
     }
 
+    if (order.isParcel) {
+      y += 4;
+      final parcelTp = _createTextPainter(
+        text: '*** PARCEL ***',
+        fontSize: 34.0,
+        bold: true,
+        align: TextAlign.center,
+        maxWidth: contentWidth,
+      );
+      if (canvas != null) {
+        parcelTp.paint(
+          canvas,
+          Offset(padding + (contentWidth - parcelTp.width) / 2, y),
+        );
+      }
+      y += parcelTp.height + 4;
+    }
+
     // Double divider
     y += 3;
     y = _drawDivider(canvas, padding, y, contentWidth, isDouble: true);

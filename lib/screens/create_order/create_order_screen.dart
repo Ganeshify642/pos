@@ -33,6 +33,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   // positive int = specific category
   int? _selectedCategoryId = -1;
   bool _isSubmitting = false;
+  String? _submittingAction;
 
   @override
   void initState() {
@@ -60,7 +61,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     super.dispose();
   }
 
-  Future<void> _submitOrder() async {
+  Future<void> _submitOrder({
+    bool printBill = true,
+    bool isParcel = false,
+  }) async {
     final orderProvider = context.read<OrderProvider>();
     final settings = context.read<SettingsProvider>();
 
@@ -78,24 +82,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _submittingAction = !printBill
+          ? 'add'
+          : isParcel
+              ? 'parcel'
+              : 'print';
+    });
 
     final summary = await orderProvider.submitOrder(
       taxSettings: settings.taxSettings!,
       businessSettings: settings.businessSettings!,
+      isParcel: isParcel,
     );
 
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    setState(() {
+      _isSubmitting = false;
+      _submittingAction = null;
+    });
 
     if (summary != null) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => InvoicePreviewScreen(
-          orderId: summary.order.id,
-          invoicePath: summary.order.invoicePath,
-          autoPrint: true,
-        ),
-      ));
+      if (printBill) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (_) => InvoicePreviewScreen(
+            orderId: summary.order.id,
+            invoicePath: summary.order.invoicePath,
+            autoPrint: true,
+          ),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order added without printing')),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -271,7 +292,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF64748B)),
+                          icon: const Icon(Icons.close_rounded,
+                              size: 18, color: Color(0xFF64748B)),
                           splashRadius: 18,
                           onPressed: () {
                             _searchController.clear();
@@ -282,7 +304,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -298,7 +321,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: isStaff ? const Color(0xFF7C3AED) : AppColors.primary,
+                      color:
+                          isStaff ? const Color(0xFF7C3AED) : AppColors.primary,
                       width: 1.5,
                     ),
                   ),
@@ -584,186 +608,239 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Shopping Cart / Staff Icon Container with Badge
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isStaff
-                      ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
-                      : const Color(0xFFFFECE5),
-                  borderRadius: BorderRadius.circular(12),
+              // Shopping Cart / Staff Icon Container with Badge
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isStaff
+                          ? const Color(0xFF7C3AED).withValues(alpha: 0.12)
+                          : const Color(0xFFFFECE5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isStaff ? Icons.badge : Icons.shopping_cart_outlined,
+                      color: isStaff
+                          ? const Color(0xFF7C3AED)
+                          : const Color(0xFFFF4500),
+                      size: 22,
+                    ),
+                  ),
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: isStaff
+                            ? const Color(0xFF7C3AED)
+                            : const Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${op.cartItemCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 10),
+              // Items and Total Price Stack
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '${op.cartItemCount} items',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      if (isStaff) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'STAFF',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF7C3AED),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppFormatters.currency(op.cartSubtotal),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isStaff ? const Color(0xFF7C3AED) : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Clear / Cancel Cart Icon Button
+              InkWell(
+                onTap: () => op.clearCart(),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.black54,
+                    size: 18,
+                  ),
                 ),
-                child: Icon(
-                  isStaff ? Icons.badge : Icons.shopping_cart_outlined,
+              ),
+              const SizedBox(width: 6),
+              // More / Options Button (Discount, Custom breakdown)
+              InkWell(
+                onTap: () => _openCheckoutSheet(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: Colors.black54,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCheckoutAction(
+                  label: 'Add Item',
+                  icon: Icons.save_outlined,
+                  color: const Color(0xFF475569),
+                  isLoading: _submittingAction == 'add',
+                  onPressed: () => _submitOrder(printBill: false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCheckoutAction(
+                  label: 'Parcel',
+                  icon: Icons.inventory_2_outlined,
+                  color: const Color(0xFFD97706),
+                  isLoading: _submittingAction == 'parcel',
+                  onPressed: () => _submitOrder(isParcel: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCheckoutAction(
+                  label: 'Print Bill',
+                  icon: Icons.print_rounded,
                   color: isStaff
                       ? const Color(0xFF7C3AED)
                       : const Color(0xFFFF4500),
-                  size: 22,
+                  isLoading: _submittingAction == 'print',
+                  onPressed: _submitOrder,
                 ),
               ),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: isStaff
-                        ? const Color(0xFF7C3AED)
-                        : const Color(0xFFE53935),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckoutAction({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    required bool isLoading,
+  }) {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: _isSubmitting ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          disabledBackgroundColor: color.withValues(alpha: 0.45),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 17),
+                  const SizedBox(width: 4),
+                  Flexible(
                     child: Text(
-                      '${op.cartItemCount}',
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 10),
-          // Items and Total Price Stack
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    '${op.cartItemCount} items',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  if (isStaff) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'STAFF',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF7C3AED),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                AppFormatters.currency(op.cartSubtotal),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: isStaff ? const Color(0xFF7C3AED) : Colors.black,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          // Clear / Cancel Cart Icon Button
-          InkWell(
-            onTap: () => op.clearCart(),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const Icon(
-                Icons.close_rounded,
-                color: Colors.black54,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          // More / Options Button (Discount, Custom breakdown)
-          InkWell(
-            onTap: () => _openCheckoutSheet(context),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: const Icon(
-                Icons.tune_rounded,
-                color: Colors.black54,
-                size: 18,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Direct 1-Tap Checkout & Print Button
-          ElevatedButton(
-            onPressed: _isSubmitting ? null : _submitOrder,
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isStaff ? const Color(0xFF7C3AED) : const Color(0xFFFF4500),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isStaff
-                            ? Icons.check_circle_outline
-                            : Icons.print_rounded,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isStaff ? 'Staff' : 'Print Bill',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
       ),
     );
   }
@@ -937,44 +1014,64 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: op.cartItems.isEmpty || _isSubmitting
-                        ? null
-                        : _submitOrder,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: isStaff
-                          ? const Color(0xFF7C3AED)
-                          : const Color(0xFFFF4500),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildCheckoutAction(
+                        label: 'Add Item',
+                        icon: Icons.save_outlined,
+                        color: const Color(0xFF475569),
+                        isLoading: _submittingAction == 'add',
+                        onPressed: () => _submitOrder(printBill: false),
+                      ),
                     ),
-                    child: _isSubmitting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isStaff
-                                    ? Icons.check_circle_outline
-                                    : Icons.print_rounded,
-                                color: Colors.white,
-                                size: 20,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildCheckoutAction(
+                        label: 'Parcel',
+                        icon: Icons.inventory_2_outlined,
+                        color: const Color(0xFFD97706),
+                        isLoading: _submittingAction == 'parcel',
+                        onPressed: () => _submitOrder(isParcel: true),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: op.cartItems.isEmpty || _isSubmitting
+                            ? null
+                            : _submitOrder,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: isStaff
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFFFF4500),
+                        ),
+                        child: _isSubmitting
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.print_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Print Bill',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                isStaff
-                                    ? 'Save Staff Order'
-                                    : 'Print & Save Bill →',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

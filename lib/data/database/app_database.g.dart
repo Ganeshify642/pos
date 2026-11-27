@@ -2110,6 +2110,16 @@ class $OrdersTableTable extends OrdersTable
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant(''));
+  static const VerificationMeta _isParcelMeta =
+      const VerificationMeta('isParcel');
+  @override
+  late final GeneratedColumn<bool> isParcel = GeneratedColumn<bool>(
+      'is_parcel', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_parcel" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _invoicePathMeta =
       const VerificationMeta('invoicePath');
   @override
@@ -2153,6 +2163,7 @@ class $OrdersTableTable extends OrdersTable
         paymentStatus,
         orderStatus,
         notes,
+        isParcel,
         invoicePath,
         createdAt,
         completedAt
@@ -2288,6 +2299,10 @@ class $OrdersTableTable extends OrdersTable
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
+    if (data.containsKey('is_parcel')) {
+      context.handle(_isParcelMeta,
+          isParcel.isAcceptableOrUnknown(data['is_parcel']!, _isParcelMeta));
+    }
     if (data.containsKey('invoice_path')) {
       context.handle(
           _invoicePathMeta,
@@ -2355,6 +2370,8 @@ class $OrdersTableTable extends OrdersTable
           .read(DriftSqlType.string, data['${effectivePrefix}order_status'])!,
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes'])!,
+      isParcel: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_parcel'])!,
       invoicePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}invoice_path']),
       createdAt: attachedDatabase.typeMapping
@@ -2392,6 +2409,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
   final String paymentStatus;
   final String orderStatus;
   final String notes;
+  final bool isParcel;
   final String? invoicePath;
   final DateTime createdAt;
   final DateTime? completedAt;
@@ -2417,6 +2435,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
       required this.paymentStatus,
       required this.orderStatus,
       required this.notes,
+      required this.isParcel,
       this.invoicePath,
       required this.createdAt,
       this.completedAt});
@@ -2452,6 +2471,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
     map['payment_status'] = Variable<String>(paymentStatus);
     map['order_status'] = Variable<String>(orderStatus);
     map['notes'] = Variable<String>(notes);
+    map['is_parcel'] = Variable<bool>(isParcel);
     if (!nullToAbsent || invoicePath != null) {
       map['invoice_path'] = Variable<String>(invoicePath);
     }
@@ -2493,6 +2513,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
       paymentStatus: Value(paymentStatus),
       orderStatus: Value(orderStatus),
       notes: Value(notes),
+      isParcel: Value(isParcel),
       invoicePath: invoicePath == null && nullToAbsent
           ? const Value.absent()
           : Value(invoicePath),
@@ -2529,6 +2550,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
       paymentStatus: serializer.fromJson<String>(json['paymentStatus']),
       orderStatus: serializer.fromJson<String>(json['orderStatus']),
       notes: serializer.fromJson<String>(json['notes']),
+      isParcel: serializer.fromJson<bool>(json['isParcel']),
       invoicePath: serializer.fromJson<String?>(json['invoicePath']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
@@ -2559,6 +2581,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
       'paymentStatus': serializer.toJson<String>(paymentStatus),
       'orderStatus': serializer.toJson<String>(orderStatus),
       'notes': serializer.toJson<String>(notes),
+      'isParcel': serializer.toJson<bool>(isParcel),
       'invoicePath': serializer.toJson<String?>(invoicePath),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
@@ -2587,6 +2610,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
           String? paymentStatus,
           String? orderStatus,
           String? notes,
+          bool? isParcel,
           Value<String?> invoicePath = const Value.absent(),
           DateTime? createdAt,
           Value<DateTime?> completedAt = const Value.absent()}) =>
@@ -2619,6 +2643,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
         paymentStatus: paymentStatus ?? this.paymentStatus,
         orderStatus: orderStatus ?? this.orderStatus,
         notes: notes ?? this.notes,
+        isParcel: isParcel ?? this.isParcel,
         invoicePath: invoicePath.present ? invoicePath.value : this.invoicePath,
         createdAt: createdAt ?? this.createdAt,
         completedAt: completedAt.present ? completedAt.value : this.completedAt,
@@ -2670,6 +2695,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
       orderStatus:
           data.orderStatus.present ? data.orderStatus.value : this.orderStatus,
       notes: data.notes.present ? data.notes.value : this.notes,
+      isParcel: data.isParcel.present ? data.isParcel.value : this.isParcel,
       invoicePath:
           data.invoicePath.present ? data.invoicePath.value : this.invoicePath,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -2702,6 +2728,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
           ..write('paymentStatus: $paymentStatus, ')
           ..write('orderStatus: $orderStatus, ')
           ..write('notes: $notes, ')
+          ..write('isParcel: $isParcel, ')
           ..write('invoicePath: $invoicePath, ')
           ..write('createdAt: $createdAt, ')
           ..write('completedAt: $completedAt')
@@ -2732,6 +2759,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
         paymentStatus,
         orderStatus,
         notes,
+        isParcel,
         invoicePath,
         createdAt,
         completedAt
@@ -2761,6 +2789,7 @@ class OrdersTableData extends DataClass implements Insertable<OrdersTableData> {
           other.paymentStatus == this.paymentStatus &&
           other.orderStatus == this.orderStatus &&
           other.notes == this.notes &&
+          other.isParcel == this.isParcel &&
           other.invoicePath == this.invoicePath &&
           other.createdAt == this.createdAt &&
           other.completedAt == this.completedAt);
@@ -2788,6 +2817,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
   final Value<String> paymentStatus;
   final Value<String> orderStatus;
   final Value<String> notes;
+  final Value<bool> isParcel;
   final Value<String?> invoicePath;
   final Value<DateTime> createdAt;
   final Value<DateTime?> completedAt;
@@ -2813,6 +2843,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
     this.paymentStatus = const Value.absent(),
     this.orderStatus = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isParcel = const Value.absent(),
     this.invoicePath = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -2839,6 +2870,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
     this.paymentStatus = const Value.absent(),
     this.orderStatus = const Value.absent(),
     this.notes = const Value.absent(),
+    this.isParcel = const Value.absent(),
     this.invoicePath = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.completedAt = const Value.absent(),
@@ -2866,6 +2898,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
     Expression<String>? paymentStatus,
     Expression<String>? orderStatus,
     Expression<String>? notes,
+    Expression<bool>? isParcel,
     Expression<String>? invoicePath,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? completedAt,
@@ -2893,6 +2926,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
       if (paymentStatus != null) 'payment_status': paymentStatus,
       if (orderStatus != null) 'order_status': orderStatus,
       if (notes != null) 'notes': notes,
+      if (isParcel != null) 'is_parcel': isParcel,
       if (invoicePath != null) 'invoice_path': invoicePath,
       if (createdAt != null) 'created_at': createdAt,
       if (completedAt != null) 'completed_at': completedAt,
@@ -2921,6 +2955,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
       Value<String>? paymentStatus,
       Value<String>? orderStatus,
       Value<String>? notes,
+      Value<bool>? isParcel,
       Value<String?>? invoicePath,
       Value<DateTime>? createdAt,
       Value<DateTime?>? completedAt}) {
@@ -2946,6 +2981,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       orderStatus: orderStatus ?? this.orderStatus,
       notes: notes ?? this.notes,
+      isParcel: isParcel ?? this.isParcel,
       invoicePath: invoicePath ?? this.invoicePath,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
@@ -3018,6 +3054,9 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (isParcel.present) {
+      map['is_parcel'] = Variable<bool>(isParcel.value);
+    }
     if (invoicePath.present) {
       map['invoice_path'] = Variable<String>(invoicePath.value);
     }
@@ -3054,6 +3093,7 @@ class OrdersTableCompanion extends UpdateCompanion<OrdersTableData> {
           ..write('paymentStatus: $paymentStatus, ')
           ..write('orderStatus: $orderStatus, ')
           ..write('notes: $notes, ')
+          ..write('isParcel: $isParcel, ')
           ..write('invoicePath: $invoicePath, ')
           ..write('createdAt: $createdAt, ')
           ..write('completedAt: $completedAt')
@@ -5814,6 +5854,7 @@ typedef $$OrdersTableTableCreateCompanionBuilder = OrdersTableCompanion
   Value<String> paymentStatus,
   Value<String> orderStatus,
   Value<String> notes,
+  Value<bool> isParcel,
   Value<String?> invoicePath,
   Value<DateTime> createdAt,
   Value<DateTime?> completedAt,
@@ -5841,6 +5882,7 @@ typedef $$OrdersTableTableUpdateCompanionBuilder = OrdersTableCompanion
   Value<String> paymentStatus,
   Value<String> orderStatus,
   Value<String> notes,
+  Value<bool> isParcel,
   Value<String?> invoicePath,
   Value<DateTime> createdAt,
   Value<DateTime?> completedAt,
@@ -5943,6 +5985,9 @@ class $$OrdersTableTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isParcel => $composableBuilder(
+      column: $table.isParcel, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get invoicePath => $composableBuilder(
       column: $table.invoicePath, builder: (column) => ColumnFilters(column));
@@ -6054,6 +6099,9 @@ class $$OrdersTableTableOrderingComposer
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isParcel => $composableBuilder(
+      column: $table.isParcel, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get invoicePath => $composableBuilder(
       column: $table.invoicePath, builder: (column) => ColumnOrderings(column));
 
@@ -6136,6 +6184,9 @@ class $$OrdersTableTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<bool> get isParcel =>
+      $composableBuilder(column: $table.isParcel, builder: (column) => column);
+
   GeneratedColumn<String> get invoicePath => $composableBuilder(
       column: $table.invoicePath, builder: (column) => column);
 
@@ -6211,6 +6262,7 @@ class $$OrdersTableTableTableManager extends RootTableManager<
             Value<String> paymentStatus = const Value.absent(),
             Value<String> orderStatus = const Value.absent(),
             Value<String> notes = const Value.absent(),
+            Value<bool> isParcel = const Value.absent(),
             Value<String?> invoicePath = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
@@ -6237,6 +6289,7 @@ class $$OrdersTableTableTableManager extends RootTableManager<
             paymentStatus: paymentStatus,
             orderStatus: orderStatus,
             notes: notes,
+            isParcel: isParcel,
             invoicePath: invoicePath,
             createdAt: createdAt,
             completedAt: completedAt,
@@ -6263,6 +6316,7 @@ class $$OrdersTableTableTableManager extends RootTableManager<
             Value<String> paymentStatus = const Value.absent(),
             Value<String> orderStatus = const Value.absent(),
             Value<String> notes = const Value.absent(),
+            Value<bool> isParcel = const Value.absent(),
             Value<String?> invoicePath = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> completedAt = const Value.absent(),
@@ -6289,6 +6343,7 @@ class $$OrdersTableTableTableManager extends RootTableManager<
             paymentStatus: paymentStatus,
             orderStatus: orderStatus,
             notes: notes,
+            isParcel: isParcel,
             invoicePath: invoicePath,
             createdAt: createdAt,
             completedAt: completedAt,

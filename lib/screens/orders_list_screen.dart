@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/db_types.dart';
 import '../providers/order_provider.dart';
 import '../utils/constants.dart';
 import '../utils/formatters.dart';
@@ -18,6 +19,7 @@ class OrdersListScreen extends StatefulWidget {
 
 class _OrdersListScreenState extends State<OrdersListScreen> {
   String _selectedDateRange = 'Today';
+  String _selectedOrderKind = 'All';
   String _customLabel = 'Custom';
 
   static const List<String> _dateRangeOptions = [
@@ -27,6 +29,12 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
     'Last 30 Days',
     'All',
   ];
+
+  static const List<String> _orderKindOptions = ['All', 'Sales', 'Staff'];
+
+  bool _isStaffOrder(Order order) =>
+      order.orderSource == AppConstants.sourceStaff ||
+      order.paymentMethod == AppConstants.paymentStaff;
 
   @override
   void initState() {
@@ -107,8 +115,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
           start.day == end.day) {
         provider.setFilterDate(start);
         setState(() {
-          _customLabel =
-              '${start.day}/${start.month}/${start.year}';
+          _customLabel = '${start.day}/${start.month}/${start.year}';
           _selectedDateRange = 'Custom';
         });
       } else {
@@ -125,8 +132,23 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
   @override
   Widget build(BuildContext context) {
     final orderProvider = context.watch<OrderProvider>();
-    final ordersList = orderProvider.filteredOrders;
-    final totalSales = ordersList.fold(0.0, (sum, o) => sum + o.finalTotal);
+    final dateOrders = orderProvider.filteredOrders;
+    final activeOrders = dateOrders.where(
+      (order) => order.orderStatus != AppConstants.statusCancelled,
+    );
+    final totalSales = activeOrders
+        .where((order) => !_isStaffOrder(order))
+        .fold(0.0, (sum, order) => sum + order.finalTotal);
+    final staffOrders = activeOrders.where(_isStaffOrder).toList();
+    final staffCost = staffOrders.fold(
+      0.0,
+      (sum, order) => sum + order.finalTotal,
+    );
+    final ordersList = switch (_selectedOrderKind) {
+      'Sales' => dateOrders.where((order) => !_isStaffOrder(order)).toList(),
+      'Staff' => dateOrders.where(_isStaffOrder).toList(),
+      _ => dateOrders,
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -252,7 +274,7 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${ordersList.length}',
+                                  '${dateOrders.length}',
                                   style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w800,
@@ -270,13 +292,13 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                   ),
                                 ),
                                 Text(
-                                   _selectedDateRange,
-                                   style: const TextStyle(
-                                     fontSize: 11.5,
-                                     fontWeight: FontWeight.w700,
-                                     color: Color(0xFFFF4500),
-                                   ),
-                                 ),
+                                  _selectedDateRange,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFFF4500),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -343,13 +365,13 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                   ),
                                 ),
                                 Text(
-                                   _selectedDateRange,
-                                   style: const TextStyle(
-                                     fontSize: 11.5,
-                                     fontWeight: FontWeight.w700,
-                                     color: Color(0xFF10B981),
-                                   ),
-                                 ),
+                                  _selectedDateRange,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -360,12 +382,76 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F3FF),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFDDD6FE)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDE9FE),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.badge_outlined,
+                        color: Color(0xFF7C3AED),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Staff Cost',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6D28D9),
+                            ),
+                          ),
+                          Text(
+                            AppFormatters.currency(staffCost),
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF4C1D95),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${staffOrders.length} staff order${staffOrders.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF7C3AED),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
 
             // ── Date Range Filter Pills Bar ──────────────────────────────
             const SizedBox(height: 8),
             SizedBox(
-              height: 38,
+              height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -383,7 +469,25 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: _orderKindOptions.map((kind) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _FilterPill(
+                      label: kind == 'Staff' ? 'Staff Orders' : kind,
+                      isSelected: _selectedOrderKind == kind,
+                      onTap: () => setState(() => _selectedOrderKind = kind),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+            const SizedBox(height: 4),
 
             // ── Orders List ───────────────────────────────────────────────
             Expanded(
@@ -445,15 +549,16 @@ class _OrdersListScreenState extends State<OrdersListScreen> {
                                 order: order,
                                 onTap: () => Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => OrderDetailsScreen(
-                                        orderId: order.id),
+                                    builder: (_) =>
+                                        OrderDetailsScreen(orderId: order.id),
                                   ),
                                 ),
                                 onLongPress: () => _showStatusPicker(order.id),
                                 onInvoiceTap: order.invoicePath != null
                                     ? () => Navigator.of(context).push(
                                           MaterialPageRoute(
-                                            builder: (_) => InvoicePreviewScreen(
+                                            builder: (_) =>
+                                                InvoicePreviewScreen(
                                               orderId: order.id,
                                               invoicePath: order.invoicePath,
                                               autoPrint: false,
@@ -547,9 +652,8 @@ class _HeaderActionButton extends StatelessWidget {
             color: isActive ? const Color(0xFFFF4500) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isActive
-                  ? const Color(0xFFFF4500)
-                  : const Color(0xFFE2E8F0),
+              color:
+                  isActive ? const Color(0xFFFF4500) : const Color(0xFFE2E8F0),
               width: 1.2,
             ),
             boxShadow: [
@@ -592,12 +696,15 @@ class _FilterPill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFFF4500) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF4500) : const Color(0xFFE2E8F0),
+            color:
+                isSelected ? const Color(0xFFFF4500) : const Color(0xFFE2E8F0),
             width: 1.2,
           ),
           boxShadow: isSelected
@@ -635,4 +742,3 @@ class _FilterPill extends StatelessWidget {
     );
   }
 }
-

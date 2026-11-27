@@ -10,7 +10,8 @@ class BusinessSettingsTable extends Table {
   String get tableName => 'business_settings';
 
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get businessName => text().withDefault(const Constant('ગોપાલ વડાપાંવ '))();
+  TextColumn get businessName =>
+      text().withDefault(const Constant('ગોપાલ વડાપાંવ '))();
   TextColumn get phone => text().withDefault(const Constant(''))();
   TextColumn get address => text().withDefault(const Constant(''))();
   TextColumn get gstId => text().withDefault(const Constant(''))();
@@ -92,9 +93,11 @@ class OrdersTable extends Table {
   RealColumn get netEarnings => real().withDefault(const Constant(0.0))();
   RealColumn get finalTotal => real().withDefault(const Constant(0.0))();
   TextColumn get paymentMethod => text().withDefault(const Constant('Cash'))();
-  TextColumn get paymentStatus => text().withDefault(const Constant('Pending'))();
+  TextColumn get paymentStatus =>
+      text().withDefault(const Constant('Pending'))();
   TextColumn get orderStatus => text().withDefault(const Constant('Pending'))();
   TextColumn get notes => text().withDefault(const Constant(''))();
+  BoolColumn get isParcel => boolean().withDefault(const Constant(false))();
   TextColumn get invoicePath => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get completedAt => dateTime().nullable()();
@@ -110,7 +113,8 @@ class OrderItemsTable extends Table {
   TextColumn get itemName => text()(); // snapshot at time of order
   IntColumn get quantity => integer()();
   RealColumn get priceAtOrder => real()();
-  TextColumn get specialInstructions => text().withDefault(const Constant(''))();
+  TextColumn get specialInstructions =>
+      text().withDefault(const Constant(''))();
 }
 
 class DailyInventoryTable extends Table {
@@ -132,7 +136,8 @@ class InventoryAdjustmentsTable extends Table {
   String get tableName => 'inventory_adjustments';
 
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get dailyInventoryId => integer().references(DailyInventoryTable, #id)();
+  IntColumn get dailyInventoryId =>
+      integer().references(DailyInventoryTable, #id)();
   TextColumn get adjustmentType => text()(); // 'made', 'wasted'
   IntColumn get delta => integer()();
   TextColumn get reason => text().withDefault(const Constant(''))();
@@ -168,7 +173,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -182,6 +187,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.addColumn(itemsTable, itemsTable.bestSellerRank);
+          }
+          if (from < 4) {
+            await m.addColumn(ordersTable, ordersTable.isParcel);
           }
         },
       );

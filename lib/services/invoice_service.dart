@@ -123,6 +123,24 @@ class InvoiceService {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
+              if (order.isParcel) ...[
+                pw.SizedBox(height: 8),
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.symmetric(vertical: 5),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(width: 2),
+                  ),
+                  child: pw.Text(
+                    'PARCEL',
+                    style: pw.TextStyle(
+                      fontSize: 34,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -178,14 +196,16 @@ class InvoiceService {
               flex: 5,
               child: pw.Text(
                 'Item',
-                style: pw.TextStyle(fontSize: 24.5, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                    fontSize: 24.5, fontWeight: pw.FontWeight.bold),
               ),
             ),
             pw.SizedBox(
               width: 40,
               child: pw.Text(
                 'Qty',
-                style: pw.TextStyle(fontSize: 24.5, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                    fontSize: 24.5, fontWeight: pw.FontWeight.bold),
                 textAlign: pw.TextAlign.center,
               ),
             ),
@@ -193,7 +213,8 @@ class InvoiceService {
               width: 70,
               child: pw.Text(
                 'Price',
-                style: pw.TextStyle(fontSize: 24.5, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                    fontSize: 24.5, fontWeight: pw.FontWeight.bold),
                 textAlign: pw.TextAlign.right,
               ),
             ),
@@ -201,7 +222,8 @@ class InvoiceService {
               width: 74,
               child: pw.Text(
                 'Total',
-                style: pw.TextStyle(fontSize: 24.5, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                    fontSize: 24.5, fontWeight: pw.FontWeight.bold),
                 textAlign: pw.TextAlign.right,
               ),
             ),
@@ -334,8 +356,8 @@ class InvoiceService {
               pw.SizedBox(height: 5),
               pw.Text(
                 'Powered by ${AppConstants.appName}',
-                style:
-                    pw.TextStyle(fontSize: 17.5, fontStyle: pw.FontStyle.italic),
+                style: pw.TextStyle(
+                    fontSize: 17.5, fontStyle: pw.FontStyle.italic),
                 textAlign: pw.TextAlign.center,
               ),
             ],

@@ -215,13 +215,15 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setItemQuantity(int itemId, int quantity, {required CartItem itemTemplate}) {
+  void setItemQuantity(int itemId, int quantity,
+      {required CartItem itemTemplate}) {
     if (quantity <= 0) {
       _cartItems.removeWhere((c) => c.itemId == itemId);
     } else {
       final existing = _cartItems.indexWhere((c) => c.itemId == itemId);
       if (existing >= 0) {
-        _cartItems[existing] = _cartItems[existing].copyWith(quantity: quantity);
+        _cartItems[existing] =
+            _cartItems[existing].copyWith(quantity: quantity);
       } else {
         _cartItems.add(itemTemplate.copyWith(quantity: quantity));
       }
@@ -268,6 +270,7 @@ class OrderProvider extends ChangeNotifier {
   Future<OrderSummary?> submitOrder({
     required TaxSetting taxSettings,
     required BusinessSetting businessSettings,
+    bool isParcel = false,
   }) async {
     if (_cartItems.isEmpty) return null;
 
@@ -277,9 +280,8 @@ class OrderProvider extends ChangeNotifier {
     try {
       final orderNumber = await _orderRepo.generateUniqueOrderNumber();
 
-      final cartLineItems = _cartItems
-          .map((c) => (qty: c.quantity, price: c.price))
-          .toList();
+      final cartLineItems =
+          _cartItems.map((c) => (qty: c.quantity, price: c.price)).toList();
 
       final calc = CalculationService.calculateOfflineOrderTotal(
         items: cartLineItems,
@@ -297,7 +299,8 @@ class OrderProvider extends ChangeNotifier {
       final orderCompanion = OrdersTableCompanion.insert(
         orderNumber: orderNumber,
         orderSource: _selectedSource,
-        deliveryAppName: Value(_tableNumber != null ? 'Table $_tableNumber' : null),
+        deliveryAppName:
+            Value(_tableNumber != null ? 'Table $_tableNumber' : null),
         customerPhone: Value(_customerPhone),
         deliveryAddress: Value(_deliveryAddress),
         subtotal: Value(subtotal),
@@ -314,6 +317,7 @@ class OrderProvider extends ChangeNotifier {
         paymentStatus: const Value(AppConstants.paymentPaid),
         orderStatus: const Value(AppConstants.statusCompleted),
         notes: const Value(''),
+        isParcel: Value(isParcel),
       );
 
       final itemCompanions = _cartItems.map((c) {
@@ -409,7 +413,7 @@ class OrderProvider extends ChangeNotifier {
   Future<Map<String, double>> getTodayRevenueSummary() async {
     final orders = await _orderRepo.getTodaysOrders();
     double total = 0, dineIn = 0, takeaway = 0, delivery = 0, staff = 0;
-    int completedCount = 0;
+    int completedCount = 0, salesOrderCount = 0;
     for (final o in orders) {
       if (o.orderStatus == AppConstants.statusCancelled) continue;
       completedCount++;
@@ -418,6 +422,7 @@ class OrderProvider extends ChangeNotifier {
           o.paymentMethod == AppConstants.paymentStaff;
 
       if (!isStaff) {
+        salesOrderCount++;
         total += o.finalTotal;
         if (o.orderSource == AppConstants.sourceDineIn) {
           dineIn += o.finalTotal;
@@ -426,6 +431,8 @@ class OrderProvider extends ChangeNotifier {
         } else if (o.orderSource == AppConstants.sourceDelivery) {
           delivery += o.finalTotal;
         }
+      } else {
+        staff += o.finalTotal;
       }
     }
     return {
@@ -436,6 +443,7 @@ class OrderProvider extends ChangeNotifier {
       'delivery': delivery,
       'staff': staff,
       'orderCount': completedCount.toDouble(),
+      'salesOrderCount': salesOrderCount.toDouble(),
     };
   }
 }

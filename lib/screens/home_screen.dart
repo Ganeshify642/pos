@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -178,7 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               isSelected ? selectedIcon : icon,
-              color: isSelected ? const Color(0xFFFF4500) : const Color(0xFF64748B),
+              color: isSelected
+                  ? const Color(0xFFFF4500)
+                  : const Color(0xFF64748B),
               size: 24,
             ),
             const SizedBox(height: 2),
@@ -187,7 +190,9 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? const Color(0xFFFF4500) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFFFF4500)
+                    : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -211,6 +216,7 @@ class _DashboardTab extends StatefulWidget {
 class _DashboardTabState extends State<_DashboardTab> {
   Map<String, double> _stats = {};
   bool _loading = true;
+  bool _isRevenueVisible = false;
 
   @override
   void initState() {
@@ -229,6 +235,11 @@ class _DashboardTabState extends State<_DashboardTab> {
     }
   }
 
+  void _toggleRevenueVisibility() {
+    HapticFeedback.selectionClick();
+    setState(() => _isRevenueVisible = !_isRevenueVisible);
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -237,7 +248,9 @@ class _DashboardTabState extends State<_DashboardTab> {
 
     final totalRev = _stats['total'] ?? 0.0;
     final orderCount = (_stats['orderCount'] ?? 0.0).toInt();
-    final avgOrderVal = orderCount > 0 ? (totalRev / orderCount) : 0.0;
+    final salesOrderCount = (_stats['salesOrderCount'] ?? 0.0).toInt();
+    final avgOrderVal =
+        salesOrderCount > 0 ? (totalRev / salesOrderCount) : 0.0;
 
     return SafeArea(
       child: RefreshIndicator(
@@ -323,7 +336,8 @@ class _DashboardTabState extends State<_DashboardTab> {
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: const Color(0xFFFCA5A5).withValues(alpha: 0.5)),
+                          color:
+                              const Color(0xFFFCA5A5).withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       children: [
@@ -378,213 +392,260 @@ class _DashboardTabState extends State<_DashboardTab> {
                         ),
                         child: const Center(child: CircularProgressIndicator()),
                       )
-                    : Container(
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: const Color(0xFFF1F5F9), width: 1.2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
+                    : Semantics(
+                        button: true,
+                        label: _isRevenueVisible
+                            ? 'Revenue visible. Double tap to hide.'
+                            : 'Revenue hidden. Double tap to show.',
+                        onTap: _toggleRevenueVisibility,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onDoubleTap: _toggleRevenueVisibility,
+                          child: Container(
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: const Color(0xFFF1F5F9), width: 1.2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            // Left vertical orange bar accent
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                width: 4,
-                                color: const Color(0xFFFF4500),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Top Row: Revenue Title + Amount + Sparkline Chart
-                                  Row(
+                            child: Stack(
+                              children: [
+                                // Left vertical orange bar accent
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 4,
+                                    color: const Color(0xFFFF4500),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              "Today's Revenue",
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF64748B),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              AppFormatters.currency(totalRev),
-                                              style: const TextStyle(
-                                                fontSize: 30,
-                                                fontWeight: FontWeight.w800,
-                                                color: Color(0xFF0F172A),
-                                                letterSpacing: -0.5,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: const [
-                                                Icon(
-                                                  Icons.arrow_upward_rounded,
-                                                  size: 14,
-                                                  color: Color(0xFF10B981),
-                                                ),
-                                                SizedBox(width: 2),
+                                      // Top Row: Revenue Title + Amount + Sparkline Chart
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
-                                                  "12.4%",
-                                                  style: TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Color(0xFF10B981),
-                                                  ),
-                                                ),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  "from yesterday",
-                                                  style: TextStyle(
+                                                  _isRevenueVisible
+                                                      ? "Today's Revenue • Double-tap to hide"
+                                                      : "Today's Revenue • Double-tap to show",
+                                                  style: const TextStyle(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w500,
-                                                    color: Color(0xFF94A3B8),
+                                                    color: Color(0xFF64748B),
                                                   ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  _isRevenueVisible
+                                                      ? AppFormatters.currency(
+                                                          totalRev)
+                                                      : '••••••',
+                                                  style: const TextStyle(
+                                                    fontSize: 30,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Color(0xFF0F172A),
+                                                    letterSpacing: -0.5,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: const [
+                                                    Icon(
+                                                      Icons
+                                                          .arrow_upward_rounded,
+                                                      size: 14,
+                                                      color: Color(0xFF10B981),
+                                                    ),
+                                                    SizedBox(width: 2),
+                                                    Text(
+                                                      "12.4%",
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color:
+                                                            Color(0xFF10B981),
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      "from yesterday",
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color:
+                                                            Color(0xFF94A3B8),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                          _isRevenueVisible
+                                              ? _buildSparklineChart()
+                                              : const Padding(
+                                                  padding: EdgeInsets.all(12),
+                                                  child: Icon(
+                                                    Icons.lock_outline_rounded,
+                                                    size: 30,
+                                                    color: Color(0xFF64748B),
+                                                  ),
+                                                ),
+                                        ],
                                       ),
-                                      _buildSparklineChart(),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Divider(
-                                    color: Color(0xFFF1F5F9),
-                                    height: 1,
-                                    thickness: 1,
-                                  ),
-                                  const SizedBox(height: 14),
+                                      const SizedBox(height: 16),
+                                      const Divider(
+                                        color: Color(0xFFF1F5F9),
+                                        height: 1,
+                                        thickness: 1,
+                                      ),
+                                      const SizedBox(height: 14),
 
-                                  // Bottom Row: Sub-metrics (Orders & Avg. Order Value)
-                                  Row(
-                                    children: [
-                                      // Left metric: Orders
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 38,
-                                              height: 38,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFFFF0ED),
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              child: const Icon(
-                                                Icons.shopping_bag_outlined,
-                                                color: Color(0xFFFF4500),
-                                                size: 20,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                      // Bottom Row: Sub-metrics (Orders & Avg. Order Value)
+                                      Row(
+                                        children: [
+                                          // Left metric: Orders
+                                          Expanded(
+                                            child: Row(
                                               children: [
-                                                Text(
-                                                  '$orderCount',
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: Color(0xFF0F172A),
+                                                Container(
+                                                  width: 38,
+                                                  height: 38,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFFFFF0ED),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.shopping_bag_outlined,
+                                                    color: Color(0xFFFF4500),
+                                                    size: 20,
                                                   ),
                                                 ),
-                                                const Text(
-                                                  'Orders',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Color(0xFF64748B),
-                                                  ),
+                                                const SizedBox(width: 10),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      '$orderCount',
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color:
+                                                            Color(0xFF0F172A),
+                                                      ),
+                                                    ),
+                                                    const Text(
+                                                      'Orders',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color:
+                                                            Color(0xFF64748B),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Vertical Divider
-                                      Container(
-                                        width: 1,
-                                        height: 36,
-                                        color: const Color(0xFFF1F5F9),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      // Right metric: Avg Order Value
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 38,
-                                              height: 38,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFFFF0ED),
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              child: const Icon(
-                                                Icons.currency_rupee_rounded,
-                                                color: Color(0xFFFF4500),
-                                                size: 20,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                          ),
+                                          // Vertical Divider
+                                          Container(
+                                            width: 1,
+                                            height: 36,
+                                            color: const Color(0xFFF1F5F9),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          // Right metric: Avg Order Value
+                                          Expanded(
+                                            child: Row(
                                               children: [
-                                                Text(
-                                                  AppFormatters.currency(
-                                                      avgOrderVal),
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: Color(0xFF0F172A),
+                                                Container(
+                                                  width: 38,
+                                                  height: 38,
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        const Color(0xFFFFF0ED),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons
+                                                        .currency_rupee_rounded,
+                                                    color: Color(0xFFFF4500),
+                                                    size: 20,
                                                   ),
                                                 ),
-                                                const Text(
-                                                  'Avg. Order Value',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Color(0xFF64748B),
-                                                  ),
+                                                const SizedBox(width: 10),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _isRevenueVisible
+                                                          ? AppFormatters
+                                                              .currency(
+                                                                  avgOrderVal)
+                                                          : '••••',
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color:
+                                                            Color(0xFF0F172A),
+                                                      ),
+                                                    ),
+                                                    const Text(
+                                                      'Avg. Order Value',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color:
+                                                            Color(0xFF64748B),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
               ),
@@ -772,11 +833,12 @@ class _DashboardTabState extends State<_DashboardTab> {
                     ),
                     const Spacer(),
                     InkWell(
-                      onTap: () => widget.onNavigateToTab(1), // Go to Orders tab
+                      onTap: () =>
+                          widget.onNavigateToTab(1), // Go to Orders tab
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: const [
@@ -1013,4 +1075,3 @@ class _InventoryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const InventoryScreen();
 }
-
